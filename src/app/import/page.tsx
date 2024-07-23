@@ -1,5 +1,5 @@
-import ImportSection from '@/components/custom/ImportSection'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import ImportSection from '../../../../src/components/custom/ImportSection'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../../../../src/components/ui/card'
 
 export default function ImportPage() {
   return (
@@ -14,7 +14,7 @@ export default function ImportPage() {
             <CardDescription>Drag and drop a CSV file or click to upload.</CardDescription>
           </CardHeader>
           <CardContent className='grid gap-6'>
-            <ImportSection />
+            <ImportSection/>
           </CardContent>
         </Card>
       </main>

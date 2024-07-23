@@ -6,5 +6,5 @@ export default function ImportSection() {
   const [columns, setColumns] = useState<string[]>([])
   const [isReview, setIsReview] = useState(false)
 
-  return <>{isReview ? <ImportCard columns={columns} setColumns={setColumns} /> : <ReviewCard></ReviewCard>}</>
+  return <>{isReview ? <ImportCard columns={columns} setColumns={setColumns} /> : <div>WIP</div>}</>
 }
