@@ -1,8 +1,8 @@
-import {Badge} from '../../../../src/components/ui/badge'
-import {Card, CardContent} from '../../../../src/components/ui/card'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../../../../src/components/ui/table'
-import {Input} from '../../../../src/components/ui/input'
 import {Search} from 'lucide-react'
+import {Input} from "@/components/ui/input";
+import {Card, CardContent} from "@/components/ui/card";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
 
 export default function TransactionDashboard() {
   return (

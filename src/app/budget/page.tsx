@@ -1,5 +1,5 @@
-import {Card, CardContent} from '../../../../src/components/ui/card'
-import {AdjustBudgetCard} from '../../../../src/components/custom/AdjustBudgetCard'
+import {Card, CardContent} from "@/components/ui/card";
+import {AdjustBudgetCard} from "@/components/custom/AdjustBudgetCard";
 
 export default function ImportPage() {
   return (

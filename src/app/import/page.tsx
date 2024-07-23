@@ -1,5 +1,5 @@
-import ImportSection from '../../../../src/components/custom/ImportSection'
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../../../../src/components/ui/card'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import ImportSection from "@/components/custom/ImportSection";
 
 export default function ImportPage() {
   return (
