@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
-import { BudgetInput } from '@/components/custom/BudgetInput'
-import { Button } from '@/components/ui/button'
-import { CirclePlus } from 'lucide-react'
+import {useState} from 'react'
+import {BudgetInput} from '@/components/custom/BudgetInput'
+import {Button} from '@/components/ui/button'
+import {CirclePlus} from 'lucide-react'
 
 interface Props {
   sectionName: string
@@ -10,41 +10,38 @@ interface Props {
   setTotal: (total: number) => void
 }
 
-export function BudgetSection({ sectionName, setTotal, total }: Props) {
-  const [inputs, setInputs] = useState([{ id: Date.now(), value: 0 }])
+export function BudgetSection({sectionName, setTotal, total}: Props) {
+  const [inputs, setInputs] = useState([total])
 
   const addInput = () => {
-    setInputs([...inputs, { id: Date.now(), value: 0 }])
+    setInputs([...inputs, 0])
   }
 
-  const removeInput = (id: number) => {
-    const filteredInputs = inputs.filter((input) => input.id !== id)
-    setInputs(filteredInputs)
-    calculateTotal(filteredInputs)
-  }
-
-  const handleChange = (id: number, newValue: string) => {
-    const updatedInputs = inputs.map((input) => (input.id === id ? { ...input, value: Number(newValue) } : input))
+  const removeInput = (index: number) => {
+    const updatedInputs = inputs.filter((_, i) => i !== index)
     setInputs(updatedInputs)
     calculateTotal(updatedInputs)
   }
 
-  const calculateTotal = (inputs: { id: number; value: number }[]) => {
-    const total = inputs.reduce((acc, curr) => acc + curr.value, 0)
-    setTotal(total)
+  const handleChange = (index: number, newValue: string) => {
+    const updatedInputs = inputs.map((input, mapIndex) => mapIndex === index ? Number(newValue) : input)
+    setInputs(updatedInputs)
+    calculateTotal(updatedInputs)
   }
+
+  const calculateTotal = (inputs: number[]) => setTotal(inputs.reduce((acc, curr) => acc + curr, 0))
 
   return (
     <>
       <div className='flex flex-col gap-4'>
         <h2 className='text-2xl flex items-center gap-4'>
-          {sectionName}: <h3 className={'text-xl'}>{total}$</h3>
+          {sectionName}: {total}$
         </h2>
         {inputs.map((input, index) => (
-          <BudgetInput key={index} input={input} handleChange={handleChange} removeInput={removeInput} />
+          <BudgetInput key={index} id={index} value={input} handleChange={handleChange} removeInput={removeInput}/>
         ))}
         <Button onClick={addInput} variant={'ghost'} className={'flex gap-2'}>
-          <CirclePlus color={'green'} />
+          <CirclePlus color={'green'}/>
           Add Input
         </Button>
       </div>

@@ -5,6 +5,7 @@ import {type ReactNode} from "react";
 import NavbarLink from "@/components/custom/NavbarLink";
 import {type Metadata} from "next";
 import {TRPCReactProvider} from "@/trpc/react";
+import {Toaster} from "@/components/ui/toaster";
 
 
 const inter = Inter({subsets: ['latin']})
@@ -34,6 +35,7 @@ export default function RootLayout({
           </nav>
         </aside>
         {children}
+        <Toaster/>
       </div>
     </TRPCReactProvider>
     </body>

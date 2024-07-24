@@ -12,17 +12,17 @@ datasource db {
 
 model Budget {
   id             Int @id @default(autoincrement())
-  income         Int
-  savings        Int
-  housing        Int
-  food           Int
-  education      Int
-  recreation     Int
-  clothing       Int
-  communications Int
-  personalCare   Int
-  insurance      Int
-  transportation Int
-  medical        Int
-  fees           Int
+  income         Int @default(0)
+  savings        Int @default(0)
+  housing        Int @default(0)
+  food           Int @default(0)
+  education      Int @default(0)
+  recreation     Int @default(0)
+  clothing       Int @default(0)
+  communications Int @default(0)
+  personalCare   Int @default(0)
+  insurance      Int @default(0)
+  transportation Int @default(0)
+  medical        Int @default(0)
+  fees           Int @default(0)
 }
