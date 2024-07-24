@@ -11,18 +11,27 @@ datasource db {
 }
 
 model Budget {
-  id             Int @id @default(autoincrement())
-  income         Int @default(0)
-  savings        Int @default(0)
-  housing        Int @default(0)
-  food           Int @default(0)
-  education      Int @default(0)
-  recreation     Int @default(0)
-  clothing       Int @default(0)
-  communications Int @default(0)
-  personalCare   Int @default(0)
-  insurance      Int @default(0)
-  transportation Int @default(0)
-  medical        Int @default(0)
-  fees           Int @default(0)
+  id             Int   @id @default(autoincrement())
+  income         Float @default(0)
+  savings        Float @default(0)
+  housing        Float @default(0)
+  food           Float @default(0)
+  education      Float @default(0)
+  recreation     Float @default(0)
+  clothing       Float @default(0)
+  communications Float @default(0)
+  personalCare   Float @default(0)
+  insurance      Float @default(0)
+  transportation Float @default(0)
+  medical        Float @default(0)
+  fees           Float @default(0)
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  amount      Float    @default(0)
+  date        DateTime @default(now())
+  category    String?
+  description String
+  toReview    Boolean  @default(true)
 }

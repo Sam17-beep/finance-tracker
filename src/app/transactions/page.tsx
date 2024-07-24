@@ -1,10 +1,13 @@
 import {Search} from 'lucide-react'
 import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
+import {Table, TableBody, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {api} from "@/trpc/server";
+import {TransactionRow} from "@/components/custom/TransactionRow";
 
-export default function TransactionDashboard() {
+export default async function TransactionDashboard() {
+  const transactions = await api.transaction.getTransactions()
+
   return (
     <div className='flex flex-col sm:gap-4 sm:py-4 sm:pl-14'>
       <header className='top-0 flex items-center gap-4 static h-auto border-0 bg-transparent px-6'>
@@ -31,16 +34,9 @@ export default function TransactionDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow className='bg-accent'>
-                  <TableCell className='table-cell'>2023-06-23</TableCell>
-                  <TableCell className='table-cell'>Description</TableCell>
-                  <TableCell className='table-cell'>
-                    <Badge className='text-xs' variant='outline'>
-                      Test
-                    </Badge>
-                  </TableCell>
-                  <TableCell className='table-cell'>$250.00</TableCell>
-                </TableRow>
+                {transactions.map((transaction) => (
+                  <TransactionRow transaction={transaction} key={transaction.id}/>
+                )}
               </TableBody>
             </Table>
           </CardContent>
