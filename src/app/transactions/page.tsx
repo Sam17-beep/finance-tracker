@@ -3,10 +3,10 @@ import {Input} from "@/components/ui/input";
 import {Card, CardContent} from "@/components/ui/card";
 import {Table, TableBody, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {api} from "@/trpc/server";
-import {TransactionRow} from "@/components/custom/TransactionRow";
+import {TransactionsTable} from "@/components/custom/TransactionsTable";
 
 export default async function TransactionDashboard() {
-  const transactions = await api.transaction.getTransactions()
+  void api.transaction.getTransactions.prefetch()
 
   return (
     <div className='flex flex-col sm:gap-4 sm:py-4 sm:pl-14'>
@@ -31,12 +31,11 @@ export default async function TransactionDashboard() {
                   <TableHead className='table-cell'>Description</TableHead>
                   <TableHead className='table-cell'>Category</TableHead>
                   <TableHead className='table-cell'>Amount</TableHead>
+                  <TableHead className='table-cell'>Menu</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction) => (
-                  <TransactionRow transaction={transaction} key={transaction.id}/>
-                )}
+                <TransactionsTable/>
               </TableBody>
             </Table>
           </CardContent>

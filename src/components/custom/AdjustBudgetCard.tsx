@@ -45,7 +45,7 @@ export function AdjustBudgetCard({initBudget}: { initBudget: Budget | null }) {
   const utils = api.useUtils();
   const createPost = api.budget.upsert.useMutation({
     onSuccess: async (budget) => {
-      await utils.post.invalidate();
+      await utils.budget.invalidate();
       setBudget(budget);
     },
     onError: (error) => {
