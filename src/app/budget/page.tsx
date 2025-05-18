@@ -7,7 +7,7 @@ export default async function BudgetPage() {
 
   return (
     <HydrateClient>
-      <div className='flex flex-col sm:gap-4 sm:py-4 sm:pl-14'>
+      <div className='flex flex-col sm:gap-4 sm:py-4'>
         <header className='top-0 flex items-center justify-center gap-4 static h-auto border-0 bg-transparent px-6'>
           <h1 className='text-5xl font-semibold leading-none tracking-tight'>Budget</h1>
         </header>
