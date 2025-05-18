@@ -4,7 +4,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import {BarChart3, Calculator, Import, List} from 'lucide-react'
 import NavbarLink from "@/components/custom/NavbarLink";
-import {Toaster} from "@/components/ui/toaster";
+import {Toaster} from "@/components/ui/sonner";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
