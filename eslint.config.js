@@ -1,66 +1,43 @@
-import js from "@eslint/js";
-import { defineConfig } from "eslint/config";
-import nextPlugin from "eslint-config-next";
-import prettierPlugin from "eslint-plugin-prettier";
-import reactPlugin from "eslint-plugin-react";
-import unusedImportsPlugin from "eslint-plugin-unused-imports";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tseslintParser from "@typescript-eslint/parser";
+import { FlatCompat } from "@eslint/eslintrc";
+import tseslint from 'typescript-eslint';
 
-export default defineConfig([
+const compat = new FlatCompat({});
+
+export default tseslint.config(
   {
-    files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    plugins: {
-      js,
-      "@typescript-eslint": tseslint,
-      "prettier": prettierPlugin,
-      "react": reactPlugin,
-      "unused-imports": unusedImportsPlugin,
-    },
-    languageOptions: {
-      parser: tseslintParser,
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-    settings: {
-      react: {
-        version: "detect",
-      },
-    },
-    rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          "argsIgnorePattern": "^_"
-        }
-      ],
+		ignores: ['.next']
+	},
+  ...compat.extends("next/core-web-vitals"),
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+		extends: [
+			...tseslint.configs.recommended,
+			...tseslint.configs.recommendedTypeChecked,
+			...tseslint.configs.stylisticTypeChecked
+		],
+      rules: {
     "@typescript-eslint/array-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
     "@typescript-eslint/consistent-type-imports": [
       "warn",
-      {
-        "prefer": "type-imports",
-        "fixStyle": "inline-type-imports"
-      }
+      { prefer: "type-imports", fixStyle: "inline-type-imports" },
     ],
+    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/require-await": "off",
     "@typescript-eslint/no-misused-promises": [
       "error",
-      {
-        "checksVoidReturn": {
-          "attributes": false
-        }
-      }
-    ]
-    },
+      { checksVoidReturn: { attributes: false } },
+    ],
+  },
   },
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
-    ...nextPlugin,
-  },
-]);
+		linterOptions: {
+			reportUnusedDisableDirectives: true
+		},
+		languageOptions: {
+			parserOptions: {
+				projectService: true
+			}
+		}
+	}
+)
