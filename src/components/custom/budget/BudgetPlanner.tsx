@@ -5,7 +5,7 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { BudgetSummary } from "./BudgetSummary";
 import { CategoryForm } from "./CategoryForm";
-import { CategoryItem } from "./CategoryItem";
+import { SortableCategories } from "./SortableCategories";
 import { type BudgetTotals, type Category } from "./types";
 
 export function BudgetPlanner() {
@@ -65,15 +65,10 @@ export function BudgetPlanner() {
               No categories added yet. Add a category to get started.
             </p>
           ) : (
-            <div className="space-y-6">
-              {categories.map((category: Category) => (
-                <CategoryItem
-                  key={category.id}
-                  category={category}
-                  onDelete={() => handleDeleteCategory(category.id)}
-                />
-              ))}
-            </div>
+            <SortableCategories
+              categories={categories}
+              onDeleteCategory={handleDeleteCategory}
+            />
           )}
         </CardContent>
       </Card>

@@ -23,9 +23,6 @@ export const budgetRouter = createTRPCRouter({
         include: {
           subcategories: true,
         },
-        orderBy: {
-          name: 'asc',
-        },
       });
     }),
 

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
@@ -47,14 +47,22 @@ export function CategoryForm() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="category-name">Category Name</Label>
               <Input
                 id="category-name"
                 placeholder="e.g., Housing, Transportation"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
               />
             </div>
             <div className="flex items-end space-x-2">
@@ -64,7 +72,9 @@ export function CategoryForm() {
                   <Switch
                     id="is-income"
                     checked={formData.isIncome}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isIncome: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isIncome: checked }))
+                    }
                   />
                   <span>{formData.isIncome ? "Income" : "Expense"}</span>
                 </div>
@@ -83,4 +93,4 @@ export function CategoryForm() {
       </CardContent>
     </Card>
   );
-} 
+}

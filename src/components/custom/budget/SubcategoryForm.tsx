@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
@@ -33,9 +33,15 @@ export function SubcategoryForm({ categoryId }: SubcategoryFormProps) {
   });
 
   const handleSubmit = () => {
-    if (formData.name.trim() === "" || isNaN(Number.parseFloat(formData.amount))) return;
+    if (
+      formData.name.trim() === "" ||
+      isNaN(Number.parseFloat(formData.amount))
+    )
+      return;
 
-    const amount = Number.parseFloat(Number.parseFloat(formData.amount).toFixed(2));
+    const amount = Number.parseFloat(
+      Number.parseFloat(formData.amount).toFixed(2),
+    );
     if (amount < 0) return;
 
     createSubcategory.mutate({
@@ -46,13 +52,21 @@ export function SubcategoryForm({ categoryId }: SubcategoryFormProps) {
   };
 
   return (
-    <div className="mb-4 p-3 bg-muted/50 rounded-md">
-      <h4 className="text-sm font-medium mb-2">Add Subcategory</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="bg-muted/50 mb-4 rounded-md p-3">
+      <h4 className="mb-2 text-sm font-medium">Add Subcategory</h4>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Input
           placeholder="Subcategory name"
           value={formData.name}
-          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
+          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
         />
         <div className="flex space-x-2">
           <Input
@@ -61,16 +75,21 @@ export function SubcategoryForm({ categoryId }: SubcategoryFormProps) {
             step="0.01"
             placeholder="Target amount (0.00)"
             value={formData.amount}
-            onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, amount: e.target.value }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
           />
-          <Button
-            onClick={handleSubmit}
-            disabled={createSubcategory.isLoading}
-          >
+          <Button onClick={handleSubmit} disabled={createSubcategory.isPending}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
       </div>
     </div>
   );
-} 
+}
