@@ -9,7 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type RouterOutputs } from "@/trpc/shared";
-import { TransactionRow, type TransactionRowInterface } from "./TransactionRow";
+import {
+  ImportedTransactionRow,
+  type ImportedTransactionRowInterface,
+} from "./ImportedTransactionRow";
 import { Eye, EyeOff, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,7 +26,7 @@ import {
 type Category = RouterOutputs["budget"]["getCategories"][number];
 type Rule = RouterOutputs["rules"]["getAll"][number];
 
-interface TransactionTableProps {
+interface ImportedTransactionTableProps {
   transactions: Array<{
     id?: string;
     date: Date;
@@ -53,13 +56,13 @@ interface TransactionTableProps {
 
 type VisibilityMode = "all" | "hide-ruled" | "hide-classified";
 
-export function TransactionTable({
+export function ImportedTransactionTable({
   transactions,
   setTransactions,
   categories,
   rules = [],
   onRuleCreated,
-}: TransactionTableProps) {
+}: ImportedTransactionTableProps) {
   const [visibilityMode, setVisibilityMode] = useState<VisibilityMode>("all");
 
   const filteredTransactions = transactions
@@ -90,7 +93,10 @@ export function TransactionTable({
     setUnClassifiedCount(transactions.length - classified);
   }, [transactions]);
 
-  const handleSave = (index: number, transaction: TransactionRowInterface) => {
+  const handleSave = (
+    index: number,
+    transaction: ImportedTransactionRowInterface,
+  ) => {
     const newTransactions = [...transactions];
     if (!newTransactions[index]) return;
     newTransactions[index] = {
@@ -174,7 +180,7 @@ export function TransactionTable({
           </TableHeader>
           <TableBody>
             {filteredTransactions.map(({ transaction, index }) => (
-              <TransactionRow
+              <ImportedTransactionRow
                 key={index}
                 transaction={transaction}
                 index={index}

@@ -20,7 +20,7 @@ import { InlineEdit } from "@/components/ui/InlineEdit";
 type Category = RouterOutputs["budget"]["getCategories"][number];
 type Rule = RouterOutputs["rules"]["getAll"][number];
 
-export interface TransactionRowInterface {
+export interface ImportedTransactionRowInterface {
   id?: string;
   date: Date;
   name: string;
@@ -32,17 +32,17 @@ export interface TransactionRowInterface {
 }
 
 interface TransactionRowProps {
-  transaction: TransactionRowInterface;
+  transaction: ImportedTransactionRowInterface;
   index: number;
   categories: Category[];
   rules: Rule[];
-  onSave: (index: number, transaction: TransactionRowInterface) => void;
+  onSave: (index: number, transaction: ImportedTransactionRowInterface) => void;
   onDiscard: (index: number) => void;
   onDelete: (index: number) => void;
   onRuleCreatedOrChange?: () => void;
 }
 
-export function TransactionRow({
+export function ImportedTransactionRow({
   transaction,
   index,
   categories,

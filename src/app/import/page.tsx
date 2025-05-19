@@ -7,7 +7,7 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Upload, Save, RefreshCw } from "lucide-react";
 import { CSVUploader } from "../../components/custom/import/CSVUploader";
-import { TransactionTable } from "../../components/custom/transaction/TransactionTable";
+import { ImportedTransactionTable } from "../../components/custom/transaction/ImportedTransactionTable";
 import { RulesManager } from "../../components/custom/rules/RulesManager";
 import {
   Tooltip,
@@ -140,7 +140,7 @@ export default function ImportPage() {
             onTransactionsLoaded={handleTransactionsLoaded}
             transactions={transactions}
           />
-          <TransactionTable
+          <ImportedTransactionTable
             transactions={transactions}
             setTransactions={setTransactions}
             categories={categories ?? []}
