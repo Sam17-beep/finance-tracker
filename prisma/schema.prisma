@@ -10,28 +10,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Budget {
-  id             Int   @id @default(autoincrement())
-  income         Float @default(0)
-  savings        Float @default(0)
-  housing        Float @default(0)
-  food           Float @default(0)
-  education      Float @default(0)
-  recreation     Float @default(0)
-  clothing       Float @default(0)
-  communications Float @default(0)
-  personalCare   Float @default(0)
-  insurance      Float @default(0)
-  transportation Float @default(0)
-  medical        Float @default(0)
-  fees           Float @default(0)
+model Category {
+  id          String        @id @default(cuid())
+  name        String
+  isIncome    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  subcategories Subcategory[]
 }
 
-model Transaction {
-  id          Int      @id @default(autoincrement())
-  amount      Float    @default(0)
-  date        DateTime @default(now())
-  category    String?
-  description String
-  toReview    Boolean  @default(true)
+model Subcategory {
+  id          String    @id @default(cuid())
+  name        String
+  targetAmount Decimal   @default(0)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
 }
