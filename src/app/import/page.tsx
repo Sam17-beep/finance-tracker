@@ -7,7 +7,7 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Upload, Save, RefreshCw } from "lucide-react";
 import { CSVUploader } from "../../components/custom/import/CSVUploader";
-import { ImportedTransactionTable } from "../../components/custom/transaction/ImportedTransactionTable";
+import { ImportedTransactionTable } from "../../components/custom/importedTransaction/ImportedTransactionTable";
 import { RulesManager } from "../../components/custom/rules/RulesManager";
 import {
   Tooltip,
