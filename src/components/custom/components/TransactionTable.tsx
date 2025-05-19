@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -79,11 +79,16 @@ export function TransactionTable({
       }
     });
 
-  const ruledCount = transactions.filter((t) => t.appliedRuleId).length;
-  const classifiedCount = transactions.filter(
-    (t) => t.categoryId && t.subcategoryId,
-  ).length;
-  const unruledCount = transactions.length - ruledCount;
+  const [classifiedCount, setClassifiedCount] = useState(0);
+  const [unClassifiedCount, setUnClassifiedCount] = useState(0);
+
+  useEffect(() => {
+    const classified = transactions.filter(
+      (t) => t.categoryId && t.subcategoryId,
+    ).length;
+    setClassifiedCount(classified);
+    setUnClassifiedCount(transactions.length - classified);
+  }, [transactions]);
 
   const handleSave = (index: number, transaction: TransactionRowInterface) => {
     const newTransactions = [...transactions];
@@ -149,9 +154,8 @@ export function TransactionTable({
           </Select>
           <div className="flex gap-2">
             <Badge variant="secondary">Total: {transactions.length}</Badge>
-            <Badge variant="outline">Ruled: {ruledCount}</Badge>
             <Badge variant="outline">Classified: {classifiedCount}</Badge>
-            <Badge variant="outline">Unruled: {unruledCount}</Badge>
+            <Badge variant="outline">Unclassified: {unClassifiedCount}</Badge>
           </div>
         </div>
       </div>
