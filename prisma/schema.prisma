@@ -17,6 +17,8 @@ model Category {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   subcategories Subcategory[]
+  transactions Transaction[]
+  rules        Rule[]
 }
 
 model Subcategory {
@@ -27,6 +29,41 @@ model Subcategory {
   category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  transactions Transaction[]
+  rules        Rule[]
 
   @@index([categoryId])
+}
+
+model Transaction {
+  id            String      @id @default(cuid())
+  date          DateTime
+  amount        Decimal
+  name          String
+  categoryId    String?
+  category      Category?   @relation(fields: [categoryId], references: [id])
+  subcategoryId String?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+  isDiscarded   Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([subcategoryId])
+}
+
+model Rule {
+  id            String      @id @default(cuid())
+  matchType     String      // "exact" or "contains"
+  matchString   String
+  categoryId    String?
+  category      Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategoryId String?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  isDiscarded   Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([subcategoryId])
 }
