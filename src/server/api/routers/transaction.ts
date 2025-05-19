@@ -45,6 +45,17 @@ async function findDuplicateTransactions(
   return duplicates;
 }
 
+const getAllInputSchema = z.object({
+  dateRange: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+  categoryId: z.string().optional(),
+  subcategoryId: z.string().optional(),
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(1).max(100).default(50),
+});
+
 export const transactionRouter = createTRPCRouter({
   // Create a new transaction
   create: publicProcedure
@@ -64,18 +75,44 @@ export const transactionRouter = createTRPCRouter({
       });
     }),
 
-  // Get all transactions
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.transaction.findMany({
-      include: {
-        category: true,
-        subcategory: true,
-      },
-      orderBy: {
-        date: "desc",
-      },
-    });
-  }),
+  // Get all transactions with filtering and pagination
+  getAll: publicProcedure
+    .input(getAllInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { dateRange, categoryId, subcategoryId, page, pageSize } = input;
+      const skip = (page - 1) * pageSize;
+
+      const where = {
+        date: {
+          gte: dateRange.from,
+          lte: dateRange.to,
+        },
+        ...(categoryId && { categoryId }),
+        ...(subcategoryId && { subcategoryId }),
+      };
+
+      const [transactions, total] = await Promise.all([
+        ctx.db.transaction.findMany({
+          where,
+          include: {
+            category: true,
+            subcategory: true,
+            appliedRules: true,
+          },
+          orderBy: {
+            date: "desc",
+          },
+          skip,
+          take: pageSize,
+        }),
+        ctx.db.transaction.count({ where }),
+      ]);
+
+      return {
+        transactions,
+        total,
+      };
+    }),
 
   // Get a single transaction by ID
   getById: publicProcedure

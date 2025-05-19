@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { TRPCError } from "@trpc/server";
+import type { PrismaClient, Rule, Transaction } from "@prisma/client";
+import type { DefaultArgs } from "@prisma/client/runtime/library";
+
+type RuleWithRelations = Rule & {
+  appliedTransactions: Transaction[];
+};
 
 const ruleSchema = z.object({
   matchType: z.enum(["exact", "contains"]),
@@ -10,14 +15,69 @@ const ruleSchema = z.object({
   isDiscarded: z.boolean().optional(),
 });
 
+const applyRuleOnAllTransactions = async (
+  transactions: Transaction[],
+  rules: RuleWithRelations[],
+  ctx: {
+    headers: Headers;
+    db: PrismaClient<{
+      log: "error"[];
+    }, never, DefaultArgs>;
+  }
+) => {
+      for (const rule of rules) {
+        for (const transaction of transactions) {
+          const matches = rule.matchType === "exact"
+          ? transaction.name === rule.matchString
+          : transaction.name.toLowerCase().includes(rule.matchString.toLowerCase());
+
+        if (matches) {
+          // If the transaction matches, update its category/subcategory and connect it to the rule
+          await ctx.db.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              categoryId: rule.categoryId ?? null,
+              subcategoryId: rule.subcategoryId ?? null,
+              isDiscarded: rule.isDiscarded ?? false,
+              appliedRules: {
+                connect: { id: rule.id },
+              },
+            },
+          });
+        } else if (rule?.appliedTransactions.some(t => t.id === transaction.id)) {
+          // If the transaction no longer matches but was previously affected by this rule,
+          // remove the rule association and reset its category/subcategory
+          await ctx.db.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              categoryId: null,
+              subcategoryId: null,
+              isDiscarded: false,
+              appliedRules: {
+                disconnect: { id: rule.id },
+              },
+            },
+          });
+        }
+      }
+  }
+};
+
 export const rulesRouter = createTRPCRouter({
   // Create a new rule
   create: publicProcedure
     .input(ruleSchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.rule.create({
+      const rule = await ctx.db.rule.create({
         data: input,
+        include: {
+          appliedTransactions: true,
+        },
       });
+
+      const transactions = await ctx.db.transaction.findMany();
+      void applyRuleOnAllTransactions(transactions, [rule], ctx);
+      return rule;
     }),
 
   // Get all rules
@@ -48,61 +108,37 @@ export const rulesRouter = createTRPCRouter({
       });
     }),
 
-  // Update a rule
+  // Reapply all rules to all transactions
+  reapplyAllRules: publicProcedure
+    .mutation(async ({ ctx }) => {
+      const transactions = await ctx.db.transaction.findMany();
+      const rules = await ctx.db.rule.findMany({
+        include: {
+          appliedTransactions: true,
+        },
+      });
+
+      await applyRuleOnAllTransactions(transactions, rules, ctx);
+      return { success: true };
+    }),
+
+  // Update a rule and reapply it to all transactions
   update: publicProcedure
     .input(z.object({
       id: z.string(),
       data: ruleSchema,
     }))
     .mutation(async ({ ctx, input }) => {
-      const rule = await ctx.db.rule.findUnique({
-        where: { id: input.id },
-        include: { appliedTransactions: true },
-      });
-
-      if (!rule) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Rule not found",
-        });
-      }
-
-      // Update the rule
       const updatedRule = await ctx.db.rule.update({
         where: { id: input.id },
         data: input.data,
-        include: { appliedTransactions: true },
+        include: {
+          appliedTransactions: true,
+        },
       });
 
-      // Check each transaction that was previously affected by this rule
-      for (const transaction of rule.appliedTransactions) {
-        const matches = input.data.matchType === "exact"
-          ? transaction.name === input.data.matchString
-          : transaction.name.toLowerCase().includes(input.data.matchString.toLowerCase());
-
-        if (matches) {
-          // If the transaction still matches, update its category/subcategory
-          await ctx.db.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              categoryId: input.data.categoryId ?? null,
-              subcategoryId: input.data.subcategoryId ?? null,
-              isDiscarded: input.data.isDiscarded ?? false,
-            },
-          });
-        } else {
-          // If the transaction no longer matches, remove the rule association
-          await ctx.db.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              appliedRules: {
-                disconnect: { id: rule.id },
-              },
-            },
-          });
-        }
-      }
-
+      const transactions = await ctx.db.transaction.findMany();
+      await applyRuleOnAllTransactions(transactions, [updatedRule], ctx);
       return updatedRule;
     }),
 
