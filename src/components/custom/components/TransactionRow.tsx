@@ -193,6 +193,8 @@ export function TransactionRow({
                 </Button>
               }
               initialMatchString={transaction.name}
+              initialCategoryId={transaction.categoryId}
+              initialSubcategoryId={transaction.subcategoryId}
               onSuccess={onRuleCreatedOrChange}
             />
           )}

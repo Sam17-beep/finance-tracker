@@ -36,6 +36,8 @@ interface RuleDialogProps {
   trigger: ReactNode;
   editingRule?: Rule | null;
   initialMatchString?: string;
+  initialCategoryId?: string;
+  initialSubcategoryId?: string;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
@@ -44,6 +46,8 @@ export function RuleDialog({
   trigger,
   editingRule,
   initialMatchString,
+  initialCategoryId,
+  initialSubcategoryId,
   onOpenChange,
   onSuccess,
 }: RuleDialogProps) {
@@ -51,8 +55,8 @@ export function RuleDialog({
   const [formData, setFormData] = useState<RuleFormData>({
     matchType: "exact",
     matchString: initialMatchString ?? "",
-    categoryId: undefined,
-    subcategoryId: undefined,
+    categoryId: initialCategoryId ?? undefined,
+    subcategoryId: initialSubcategoryId ?? undefined,
     isDiscarded: false,
   });
 
