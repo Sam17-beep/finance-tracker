@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Upload, Save, RefreshCw } from "lucide-react";
-import { CSVUploader } from "../../components/custom/components/CSVUploader";
-import { TransactionTable } from "../../components/custom/components/TransactionTable";
-import { RulesManager } from "../../components/custom/components/RulesManager";
+import { CSVUploader } from "../../components/custom/import/CSVUploader";
+import { TransactionTable } from "../../components/custom/transaction/TransactionTable";
+import { RulesManager } from "../../components/custom/rules/RulesManager";
 import {
   Tooltip,
   TooltipContent,
@@ -156,7 +156,7 @@ export default function ImportPage() {
         <TabsContent value="rules">
           <RulesManager
             rules={rules ?? []}
-            onRuleCreated={() => {
+            onRuleChangeOrCreate={() => {
               if (transactions.length > 0) {
                 handleReapplyRules();
               }

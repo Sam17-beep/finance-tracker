@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { X, Plus, Pencil } from "lucide-react";
 import { type RouterOutputs } from "@/trpc/shared";
-import { RuleDialog } from "./RuleDialog";
+import { RuleDialog } from "../rules/RuleDialog";
 import { cn } from "@/lib/utils";
 import { InlineEdit } from "@/components/ui/InlineEdit";
 

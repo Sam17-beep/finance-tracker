@@ -14,18 +14,18 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { type RouterOutputs } from "@/trpc/shared";
-import { RuleDialog } from "./RuleDialog";
+import { RuleDialog } from "../rules/RuleDialog";
 
 type Rule = RouterOutputs["rules"]["getAll"][number];
 
 interface RulesManagerProps {
   rules: Rule[];
-  onRuleCreated?: () => void;
+  onRuleChangeOrCreate?: () => void;
 }
 
 export function RulesManager({
   rules: initialRules,
-  onRuleCreated: onRuleChangeOrCreate,
+  onRuleChangeOrCreate: onRuleChangeOrCreate,
 }: RulesManagerProps) {
   const utils = api.useUtils();
   const { data: categories } = api.budget.getCategories.useQuery();

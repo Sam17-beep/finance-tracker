@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RulesTable } from "@/components/custom/components/RulesTable";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { DateRangePicker } from "@/components/custom/components/DateRangePicker";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { startOfMonth, endOfMonth } from "date-fns";
 import {
   Select,
@@ -16,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RulesManager } from "@/components/custom/rules/RulesManager";
 
 export default function TransactionPage() {
   const router = useRouter();
@@ -124,10 +124,9 @@ export default function TransactionPage() {
           {isLoadingRules ? (
             <div>Loading rules...</div>
           ) : (
-            <RulesTable
+            <RulesManager
               rules={rules ?? []}
-              categories={categories ?? []}
-              onRuleChange={() => router.refresh()}
+              onRuleChangeOrCreate={() => router.refresh()}
             />
           )}
         </TabsContent>
