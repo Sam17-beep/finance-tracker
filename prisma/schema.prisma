@@ -47,6 +47,7 @@ model Transaction {
   isDiscarded   Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  appliedRules  Rule[]      @relation("TransactionRules")
 
   @@index([categoryId])
   @@index([subcategoryId])
@@ -63,6 +64,7 @@ model Rule {
   isDiscarded   Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  appliedTransactions Transaction[] @relation("TransactionRules")
 
   @@index([categoryId])
   @@index([subcategoryId])

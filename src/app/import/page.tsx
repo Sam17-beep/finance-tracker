@@ -9,17 +9,25 @@ import { Upload, Save, RefreshCw } from "lucide-react";
 import { CSVUploader } from "./components/CSVUploader";
 import { TransactionTable } from "./components/TransactionTable";
 import { RulesManager } from "./components/RulesManager";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function ImportPage() {
   const [activeTab, setActiveTab] = useState("transactions");
   const [transactions, setTransactions] = useState<
     Array<{
+      id?: string;
       date: Date;
       name: string;
       amount: number;
       categoryId?: string;
       subcategoryId?: string;
       isDiscarded: boolean;
+      appliedRuleId?: string;
     }>
   >([]);
 
@@ -50,6 +58,14 @@ export default function ImportPage() {
     },
   });
 
+  const handleTransactionsLoaded = (newTransactions: typeof transactions) => {
+    setTransactions(newTransactions);
+    if (newTransactions.length > 0) {
+      // Apply rules immediately after loading transactions
+      reapplyRulesMutation.mutate(newTransactions);
+    }
+  };
+
   const handleBulkSave = () => {
     if (transactions.length === 0) {
       toast.error("No transactions to save");
@@ -68,6 +84,10 @@ export default function ImportPage() {
     reapplyRulesMutation.mutate(transactions);
   };
 
+  const areAllTransactionsClassified = transactions.every(
+    (t) => t.isDiscarded || (t.categoryId && t.subcategoryId),
+  );
+
   return (
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center justify-between">
@@ -81,10 +101,28 @@ export default function ImportPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Reapply Rules
           </Button>
-          <Button onClick={handleBulkSave} disabled={transactions.length === 0}>
-            <Save className="mr-2 h-4 w-4" />
-            Save All
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={handleBulkSave}
+                    disabled={
+                      transactions.length === 0 || !areAllTransactionsClassified
+                    }
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save All
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {!areAllTransactionsClassified
+                  ? "All transactions must be classified before saving"
+                  : "Save all transactions"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -99,18 +137,31 @@ export default function ImportPage() {
 
         <TabsContent value="transactions" className="space-y-4">
           <CSVUploader
-            onTransactionsLoaded={setTransactions}
+            onTransactionsLoaded={handleTransactionsLoaded}
             transactions={transactions}
           />
           <TransactionTable
             transactions={transactions}
             setTransactions={setTransactions}
             categories={categories ?? []}
+            rules={rules ?? []}
+            onRuleCreated={() => {
+              if (transactions.length > 0) {
+                handleReapplyRules();
+              }
+            }}
           />
         </TabsContent>
 
         <TabsContent value="rules">
-          <RulesManager rules={rules ?? []} />
+          <RulesManager
+            rules={rules ?? []}
+            onRuleCreated={() => {
+              if (transactions.length > 0) {
+                handleReapplyRules();
+              }
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
