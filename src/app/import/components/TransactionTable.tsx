@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type RouterOutputs } from "@/trpc/shared";
-import { TransactionRow } from "./TransactionRow";
+import { TransactionRow, TransactionRowInterface } from "./TransactionRow";
 
 type Category = RouterOutputs["budget"]["getCategories"][number];
 type Rule = RouterOutputs["rules"]["getAll"][number];
@@ -49,41 +48,17 @@ export function TransactionTable({
   rules = [],
   onRuleCreated,
 }: TransactionTableProps) {
-  const [editingRow, setEditingRow] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{
-    name: string;
-    amount: string;
-    categoryId?: string;
-    subcategoryId?: string;
-  }>({
-    name: "",
-    amount: "",
-  });
-
-  const handleEdit = (index: number) => {
-    const transaction = transactions[index];
-    if (!transaction) return;
-    setEditValues({
-      name: transaction.name,
-      amount: transaction.amount.toString(),
-      categoryId: transaction.categoryId,
-      subcategoryId: transaction.subcategoryId,
-    });
-    setEditingRow(index);
-  };
-
-  const handleSave = (index: number) => {
+  const handleSave = (index: number, transaction: TransactionRowInterface) => {
     const newTransactions = [...transactions];
     if (!newTransactions[index]) return;
     newTransactions[index] = {
       ...newTransactions[index],
-      name: editValues.name,
-      amount: parseFloat(editValues.amount) || 0,
-      categoryId: editValues.categoryId,
-      subcategoryId: editValues.subcategoryId,
+      name: transaction.name,
+      amount: transaction.amount,
+      categoryId: transaction.categoryId,
+      subcategoryId: transaction.subcategoryId,
     };
     setTransactions(newTransactions);
-    setEditingRow(null);
   };
 
   const handleDiscard = (index: number) => {
@@ -122,13 +97,9 @@ export function TransactionTable({
               index={index}
               categories={categories}
               rules={rules}
-              isEditing={editingRow === index}
-              editValues={editValues}
-              onEdit={handleEdit}
               onSave={handleSave}
               onDiscard={handleDiscard}
               onDelete={handleDelete}
-              onEditValuesChange={setEditValues}
               onRuleCreatedOrChange={onRuleCreated}
             />
           ))}

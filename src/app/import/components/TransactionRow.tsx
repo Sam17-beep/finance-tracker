@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,11 +16,12 @@ import { X, Plus, Pencil } from "lucide-react";
 import { type RouterOutputs } from "@/trpc/shared";
 import { RuleDialog } from "./RuleDialog";
 import { cn } from "@/lib/utils";
+import { InlineEdit } from "@/components/ui/InlineEdit";
 
 type Category = RouterOutputs["budget"]["getCategories"][number];
 type Rule = RouterOutputs["rules"]["getAll"][number];
 
-interface Transaction {
+export interface TransactionRowInterface {
   id?: string;
   date: Date;
   name: string;
@@ -33,27 +33,13 @@ interface Transaction {
 }
 
 interface TransactionRowProps {
-  transaction: Transaction;
+  transaction: TransactionRowInterface;
   index: number;
   categories: Category[];
   rules: Rule[];
-  isEditing: boolean;
-  editValues: {
-    name: string;
-    amount: string;
-    categoryId?: string;
-    subcategoryId?: string;
-  };
-  onEdit: (index: number) => void;
-  onSave: (index: number) => void;
+  onSave: (index: number, transaction: TransactionRowInterface) => void;
   onDiscard: (index: number) => void;
   onDelete: (index: number) => void;
-  onEditValuesChange: (values: {
-    name: string;
-    amount: string;
-    categoryId?: string;
-    subcategoryId?: string;
-  }) => void;
   onRuleCreatedOrChange?: () => void;
 }
 
@@ -62,13 +48,9 @@ export function TransactionRow({
   index,
   categories,
   rules,
-  isEditing,
-  editValues,
-  onEdit,
   onSave,
   onDiscard,
   onDelete,
-  onEditValuesChange,
   onRuleCreatedOrChange,
 }: TransactionRowProps) {
   const selectedCategory = categories.find(
@@ -106,39 +88,36 @@ export function TransactionRow({
     >
       <TableCell>{format(transaction.date, "MMM d, yyyy")}</TableCell>
       <TableCell>
-        {isEditing ? (
-          <Input
-            value={editValues.name}
-            onChange={(e) =>
-              onEditValuesChange({ ...editValues, name: e.target.value })
-            }
-          />
-        ) : (
-          transaction.name
-        )}
+        <InlineEdit
+          value={transaction.name}
+          onSave={(value) => {
+            onSave(index, {
+              ...transaction,
+              name: value.toString(),
+            });
+            onRuleCreatedOrChange?.();
+          }}
+        />
       </TableCell>
       <TableCell className="text-right">
-        {isEditing ? (
-          <Input
-            type="number"
-            step="0.01"
-            value={editValues.amount}
-            onChange={(e) =>
-              onEditValuesChange({ ...editValues, amount: e.target.value })
-            }
-            className="text-right"
-          />
-        ) : (
-          formatAmount(transaction.amount)
-        )}
+        <InlineEdit
+          value={transaction.amount.toString()}
+          onSave={(value) => {
+            onSave(index, {
+              ...transaction,
+              amount: parseFloat(value.toString()),
+            });
+            onRuleCreatedOrChange?.();
+          }}
+        />
       </TableCell>
       <TableCell>
-        {isEditing ? (
+        {!appliedRule ? (
           <Select
-            value={editValues.categoryId}
+            value={transaction.categoryId}
             onValueChange={(value) =>
-              onEditValuesChange({
-                ...editValues,
+              onSave(index, {
+                ...transaction,
                 categoryId: value,
                 subcategoryId: undefined,
               })
@@ -160,13 +139,16 @@ export function TransactionRow({
         )}
       </TableCell>
       <TableCell>
-        {isEditing ? (
+        {!appliedRule ? (
           <Select
-            value={editValues.subcategoryId}
+            value={transaction.subcategoryId}
             onValueChange={(value) =>
-              onEditValuesChange({ ...editValues, subcategoryId: value })
+              onSave(index, {
+                ...transaction,
+                subcategoryId: value,
+              })
             }
-            disabled={!editValues.categoryId}
+            disabled={!transaction.categoryId}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select subcategory" />
@@ -193,37 +175,26 @@ export function TransactionRow({
       </TableCell>
       <TableCell>
         <div className="flex justify-end space-x-2">
-          {isEditing ? (
-            <Button size="sm" onClick={() => onSave(index)}>
-              Save
-            </Button>
+          {appliedRule ? (
+            <RuleDialog
+              trigger={
+                <Button size="sm" variant="outline">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              }
+              editingRule={appliedRule}
+              onSuccess={onRuleCreatedOrChange}
+            />
           ) : (
-            <>
-              <Button size="sm" variant="outline" onClick={() => onEdit(index)}>
-                Edit
-              </Button>
-              {appliedRule ? (
-                <RuleDialog
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  }
-                  editingRule={appliedRule}
-                  onSuccess={onRuleCreatedOrChange}
-                />
-              ) : (
-                <RuleDialog
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  }
-                  initialMatchString={transaction.name}
-                  onSuccess={onRuleCreatedOrChange}
-                />
-              )}
-            </>
+            <RuleDialog
+              trigger={
+                <Button size="sm" variant="outline">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              }
+              initialMatchString={transaction.name}
+              onSuccess={onRuleCreatedOrChange}
+            />
           )}
           <Button size="sm" variant="ghost" onClick={() => onDelete(index)}>
             <X className="h-4 w-4" />
