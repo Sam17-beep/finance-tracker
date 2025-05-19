@@ -1,7 +1,6 @@
 "use client";
 
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -101,6 +100,7 @@ export function TransactionRow({
       </TableCell>
       <TableCell className="text-right">
         <InlineEdit
+          renderedValue={formatAmount(transaction.amount)}
           value={transaction.amount.toString()}
           onSave={(value) => {
             onSave(index, {

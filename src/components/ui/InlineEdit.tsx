@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,18 @@ import { Input } from "@/components/ui/input";
 interface InlineEditProps {
   value: string | number;
   onSave: (value: string | number) => void;
-  type?: 'text' | 'number';
+  type?: "text" | "number";
   className?: string;
+  renderedValue?: React.ReactNode;
 }
 
-export function InlineEdit({ value, onSave, type = 'text', className = '' }: InlineEditProps) {
+export function InlineEdit({
+  value,
+  onSave,
+  type = "text",
+  className = "",
+  renderedValue,
+}: InlineEditProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +36,7 @@ export function InlineEdit({ value, onSave, type = 'text', className = '' }: Inl
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (type === 'number') {
+    if (type === "number") {
       const numValue = Number.parseFloat(editValue);
       if (!isNaN(numValue) && numValue >= 0) {
         onSave(Number(numValue.toFixed(2)));
@@ -46,9 +53,9 @@ export function InlineEdit({ value, onSave, type = 'text', className = '' }: Inl
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleBlur();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setIsEditing(false);
       setEditValue(value.toString());
     }
@@ -64,8 +71,8 @@ export function InlineEdit({ value, onSave, type = 'text', className = '' }: Inl
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={`h-6 px-1 py-0 ${className}`}
-        min={type === 'number' ? 0 : undefined}
-        step={type === 'number' ? 0.01 : undefined}
+        min={type === "number" ? 0 : undefined}
+        step={type === "number" ? 0.01 : undefined}
       />
     );
   }
@@ -75,7 +82,8 @@ export function InlineEdit({ value, onSave, type = 'text', className = '' }: Inl
       onDoubleClick={handleDoubleClick}
       className={`cursor-pointer select-none ${className}`}
     >
-      {type === 'number' ? `$${Number(value).toFixed(2)}` : value}
+      {renderedValue ??
+        (type === "number" ? `$${Number(value).toFixed(2)}` : value)}
     </span>
   );
-} 
+}

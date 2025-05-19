@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Upload, Save, RefreshCw } from "lucide-react";
-import { CSVUploader } from "./components/CSVUploader";
-import { TransactionTable } from "./components/TransactionTable";
-import { RulesManager } from "./components/RulesManager";
+import { CSVUploader } from "../../components/custom/components/CSVUploader";
+import { TransactionTable } from "../../components/custom/components/TransactionTable";
+import { RulesManager } from "../../components/custom/components/RulesManager";
 import {
   Tooltip,
   TooltipContent,
