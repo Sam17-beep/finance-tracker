@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import type { PrismaClient, Rule, Transaction } from "@prisma/client";
-import type { DefaultArgs } from "@prisma/client/runtime/library";
 
 type RuleWithRelations = Rule & {
   appliedTransactions: Transaction[];
@@ -22,7 +21,7 @@ const applyRuleOnAllTransactions = async (
     headers: Headers;
     db: PrismaClient<{
       log: "error"[];
-    }, never, DefaultArgs>;
+    }>;
   }
 ) => {
       for (const rule of rules) {
@@ -80,19 +79,30 @@ export const rulesRouter = createTRPCRouter({
       return rule;
     }),
 
-  // Get all rules
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.rule.findMany({
-      include: {
-        category: true,
-        subcategory: true,
-        appliedTransactions: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-  }),
+  // Get all rules with optional filtering
+  getAll: publicProcedure
+    .input(z.object({
+      categoryId: z.string().optional(),
+      subcategoryId: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const where = {
+        ...(input?.categoryId && { categoryId: input.categoryId }),
+        ...(input?.subcategoryId && { subcategoryId: input.subcategoryId }),
+      };
+
+      return ctx.db.rule.findMany({
+        where,
+        include: {
+          category: true,
+          subcategory: true,
+          appliedTransactions: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    }),
 
   // Get a single rule by ID
   getById: publicProcedure

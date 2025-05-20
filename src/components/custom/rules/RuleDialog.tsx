@@ -20,9 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { type RouterOutputs } from "@/trpc/shared";
-
-type Rule = RouterOutputs["rules"]["getAll"][number];
+import { type Rule } from "@prisma/client";
 
 interface RuleFormData {
   matchType: "exact" | "contains";
@@ -36,8 +34,8 @@ interface RuleDialogProps {
   trigger: ReactNode;
   editingRule?: Rule | null;
   initialMatchString?: string;
-  initialCategoryId?: string;
-  initialSubcategoryId?: string;
+  initialCategoryId?: string | null;
+  initialSubcategoryId?: string | null;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }

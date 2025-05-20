@@ -2,123 +2,53 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { DateRangePicker } from "@/components/ui/DateRangePicker";
-import { startOfMonth, endOfMonth } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RulesManager } from "@/components/custom/rules/RulesManager";
+import { TransactionTable } from "@/components/custom/transaction/TransactionTable";
+import { ReapplyRulesButton } from "@/components/custom/rules/ReapplyRulesButton";
+import { TransactionFilter } from "@/components/custom/transaction/TransactionFilter";
+import { endOfYear, startOfYear } from "date-fns";
+import { type DateRange } from "@/components/ui/DateRangePicker";
 
 export default function TransactionPage() {
-  const router = useRouter();
-  const [dateRange, setDateRange] = useState({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfYear(new Date()),
+    to: endOfYear(new Date()),
   });
   const [selectedCategory, setSelectedCategory] = useState<string>("any");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("any");
-  const [page, setPage] = useState(1);
-  const pageSize = 50;
 
-  // Fetch categories and subcategories for filters
-  const { data: categories } = api.budget.getCategories.useQuery();
-
-  // Fetch transactions with filters
-  const { data: transactionsData, isLoading: isLoadingTransactions } =
-    api.transaction.getAll.useQuery({
-      dateRange,
-      categoryId: selectedCategory === "any" ? undefined : selectedCategory,
-      subcategoryId:
-        selectedSubcategory === "any" ? undefined : selectedSubcategory,
-      page,
-      pageSize,
-    });
-
-  // Fetch rules
-  const { data: rules, isLoading: isLoadingRules } =
-    api.rules.getAll.useQuery();
-
-  // Mutation to reapply all rules
-  const reapplyRulesMutation = api.rules.reapplyAllRules.useMutation({
-    onSuccess: () => {
-      toast.success("Rules reapplied successfully");
-      router.refresh();
-    },
-    onError: (error) => {
-      toast.error("Failed to reapply rules: " + error.message);
-    },
+  const { data: rules, isLoading: isLoadingRules } = api.rules.getAll.useQuery({
+    categoryId: selectedCategory === "any" ? undefined : selectedCategory,
+    subcategoryId:
+      selectedSubcategory === "any" ? undefined : selectedSubcategory,
   });
-
-  const handleReapplyRules = () => {
-    reapplyRulesMutation.mutate();
-  };
 
   return (
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Transactions & Rules</h1>
-        <Button
-          onClick={handleReapplyRules}
-          disabled={reapplyRulesMutation.isPending}
-        >
-          {reapplyRulesMutation.isPending
-            ? "Reapplying..."
-            : "Reapply All Rules"}
-        </Button>
+        <ReapplyRulesButton />
       </div>
-
-      <div className="flex items-center gap-4">
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any Category</SelectItem>
-            {categories?.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedSubcategory}
-          onValueChange={setSelectedSubcategory}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select subcategory" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any Subcategory</SelectItem>
-            {categories
-              ?.filter((cat) => cat.id === selectedCategory)
-              .map((category) =>
-                category.subcategories.map((subcategory) => (
-                  <SelectItem key={subcategory.id} value={subcategory.id}>
-                    {subcategory.name}
-                  </SelectItem>
-                )),
-              )}
-          </SelectContent>
-        </Select>
-      </div>
-
+      <TransactionFilter
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedSubcategory={selectedSubcategory}
+        setSelectedSubcategory={setSelectedSubcategory}
+      />
       <Tabs defaultValue="transactions" className="space-y-4">
         <TabsList>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="rules">Rules</TabsTrigger>
         </TabsList>
         <TabsContent value="transactions">
-          {isLoadingTransactions ? <div>Loading transactions...</div> : <div />}
+          <TransactionTable
+            dateRange={dateRange}
+            selectedCategory={selectedCategory}
+            selectedSubcategory={selectedSubcategory}
+          />
         </TabsContent>
         <TabsContent value="rules">
           {isLoadingRules ? (
@@ -126,7 +56,9 @@ export default function TransactionPage() {
           ) : (
             <RulesManager
               rules={rules ?? []}
-              onRuleChangeOrCreate={() => router.refresh()}
+              onRuleChangeOrCreate={() =>
+                api.useUtils().transaction.getAll.invalidate()
+              }
             />
           )}
         </TabsContent>

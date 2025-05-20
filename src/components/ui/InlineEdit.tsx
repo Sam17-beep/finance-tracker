@@ -19,7 +19,9 @@ export function InlineEdit({
   renderedValue,
 }: InlineEditProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toString());
+  const [editValue, setEditValue] = useState(
+    type === "number" ? Number(value).toFixed(2) : value.toString(),
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,17 +33,19 @@ export function InlineEdit({
 
   const handleDoubleClick = () => {
     setIsEditing(true);
-    setEditValue(value.toString());
+    setEditValue(
+      type === "number" ? Number(value).toFixed(2) : value.toString(),
+    );
   };
 
   const handleBlur = () => {
     setIsEditing(false);
     if (type === "number") {
-      const numValue = Number.parseFloat(editValue);
-      if (!isNaN(numValue) && numValue >= 0) {
+      const numValue = Number.parseFloat(editValue.replace(/[^0-9.-]/g, ""));
+      if (!isNaN(numValue)) {
         onSave(Number(numValue.toFixed(2)));
       } else {
-        setEditValue(value.toString());
+        setEditValue(Number(value).toFixed(2));
       }
     } else {
       if (editValue.trim()) {
@@ -57,7 +61,9 @@ export function InlineEdit({
       handleBlur();
     } else if (e.key === "Escape") {
       setIsEditing(false);
-      setEditValue(value.toString());
+      setEditValue(
+        type === "number" ? Number(value).toFixed(2) : value.toString(),
+      );
     }
   };
 
@@ -67,7 +73,14 @@ export function InlineEdit({
         ref={inputRef}
         type={type}
         value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
+        onChange={(e) => {
+          if (type === "number") {
+            const newValue = e.target.value.replace(/[^0-9.-]/g, "");
+            setEditValue(newValue);
+          } else {
+            setEditValue(e.target.value);
+          }
+        }}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={`h-6 px-1 py-0 ${className}`}

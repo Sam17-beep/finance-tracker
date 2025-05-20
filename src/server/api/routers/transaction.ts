@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import type { PrismaClient, Prisma } from "@prisma/client";
+import { type PrismaClient, Prisma } from "@prisma/client";
 
 const transactionSchema = z.object({
   date: z.date(),
   amount: z.number(),
   name: z.string(),
-  categoryId: z.string().optional(),
-  subcategoryId: z.string().optional(),
+  categoryId: z.string().nullable(),
+  subcategoryId: z.string().nullable(),
   isDiscarded: z.boolean().optional(),
 });
 
@@ -109,7 +109,10 @@ export const transactionRouter = createTRPCRouter({
       ]);
 
       return {
-        transactions,
+        transactions: transactions.map(t => ({
+          ...t,
+          amount: Number(t.amount),
+        })),
         total,
       };
     }),
@@ -134,10 +137,22 @@ export const transactionRouter = createTRPCRouter({
       data: transactionSchema,
     }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.transaction.update({
+      const updated = await ctx.db.transaction.update({
         where: { id: input.id },
-        data: input.data,
+        data: {
+          ...input.data,
+          amount: new Prisma.Decimal(input.data.amount.toString()),
+        },
+        include: {
+          category: true,
+          subcategory: true,
+          appliedRules: true,
+        },
       });
+      return {
+        ...updated,
+        amount: Number(updated.amount),
+      };
     }),
 
   // Delete a transaction

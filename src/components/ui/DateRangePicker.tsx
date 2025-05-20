@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { CalendarIcon } from "lucide-react";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -12,8 +11,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { SelectSingleEventHandler, DayModifiers } from "react-day-picker";
+import { useState } from "react";
 
-interface DateRange {
+export interface DateRange {
   from: Date;
   to: Date;
 }
@@ -31,8 +31,8 @@ export function DateRangePicker({
   onChange,
   className,
 }: DateRangePickerProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedRange, setSelectedRange] = React.useState<{
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedRange, setSelectedRange] = useState<{
     from: Date | null;
     to: Date | null;
   }>({
@@ -114,13 +114,6 @@ export function DateRangePicker({
             selected={selectedRange.from ?? undefined}
             onSelect={handleSelect}
             modifiers={modifiers}
-            modifiersStyles={{
-              selected: {
-                backgroundColor: "hsl(var(--primary))",
-                color: "white",
-              },
-              inRange: { backgroundColor: "hsl(var(--primary)/0.1)" },
-            }}
             numberOfMonths={2}
             defaultMonth={value.from}
           />
