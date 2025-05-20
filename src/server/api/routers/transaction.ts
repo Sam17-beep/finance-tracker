@@ -7,8 +7,8 @@ const transactionSchema = z.object({
   date: z.date(),
   amount: z.number(),
   name: z.string(),
-  categoryId: z.string().nullable(),
-  subcategoryId: z.string().nullable(),
+  categoryId: z.string().nullable().optional(),
+  subcategoryId: z.string().nullable().optional(),
   isDiscarded: z.boolean().optional(),
 });
 

@@ -1,11 +1,9 @@
-import {HydrateClient} from "@/trpc/server";
+import { HydrateClient } from "@/trpc/server";
 
 export default async function Home() {
   return (
     <HydrateClient>
-      <div>
-        <h1>Hello World</h1>
-      </div>
+      <main className="container mx-auto py-6"></main>
     </HydrateClient>
   );
 }

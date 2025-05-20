@@ -82,7 +82,7 @@ export function CategoryForm() {
               <Button
                 onClick={handleSubmit}
                 className="ml-auto"
-                disabled={createCategory.isLoading}
+                disabled={createCategory.isPending}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Category
