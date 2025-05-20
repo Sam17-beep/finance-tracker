@@ -104,19 +104,6 @@ export const rulesRouter = createTRPCRouter({
       });
     }),
 
-  // Get a single rule by ID
-  getById: publicProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) => {
-      return ctx.db.rule.findUnique({
-        where: { id: input },
-        include: {
-          category: true,
-          subcategory: true,
-          appliedTransactions: true,
-        },
-      });
-    }),
 
   // Reapply all rules to all transactions
   reapplyAllRules: publicProcedure
@@ -138,10 +125,10 @@ export const rulesRouter = createTRPCRouter({
       id: z.string(),
       data: ruleSchema,
     }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input: { id, data } }) => {
       const updatedRule = await ctx.db.rule.update({
-        where: { id: input.id },
-        data: input.data,
+        where: { id: id },
+        data: data,
         include: {
           appliedTransactions: true,
         },

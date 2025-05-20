@@ -57,24 +57,6 @@ const getAllInputSchema = z.object({
 });
 
 export const transactionRouter = createTRPCRouter({
-  // Create a new transaction
-  create: publicProcedure
-    .input(transactionSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Check for duplicate
-      const duplicates = await findDuplicateTransactions(ctx, [input]);
-      if (duplicates.length > 0) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'A transaction with the same name, amount, and date already exists',
-        });
-      }
-
-      return ctx.db.transaction.create({
-        data: input,
-      });
-    }),
-
   // Get all transactions with filtering and pagination
   getAll: publicProcedure
     .input(getAllInputSchema)
@@ -117,18 +99,6 @@ export const transactionRouter = createTRPCRouter({
       };
     }),
 
-  // Get a single transaction by ID
-  getById: publicProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) => {
-      return ctx.db.transaction.findUnique({
-        where: { id: input },
-        include: {
-          category: true,
-          subcategory: true,
-        },
-      });
-    }),
 
   // Update a transaction
   update: publicProcedure
@@ -136,12 +106,12 @@ export const transactionRouter = createTRPCRouter({
       id: z.string(),
       data: transactionSchema,
     }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input: { id, data } }) => {
       const updated = await ctx.db.transaction.update({
-        where: { id: input.id },
+        where: { id: id },
         data: {
-          ...input.data,
-          amount: new Prisma.Decimal(input.data.amount.toString()),
+          ...data,
+          amount: new Prisma.Decimal(data.amount.toString()),
         },
         include: {
           category: true,
@@ -149,6 +119,7 @@ export const transactionRouter = createTRPCRouter({
           appliedRules: true,
         },
       });
+      
       return {
         ...updated,
         amount: Number(updated.amount),
