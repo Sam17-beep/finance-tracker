@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { type PrismaClient, Prisma } from "@prisma/client";
+import { Mode } from "@/domain/Date";
 
 const transactionSchema = z.object({
   date: z.date(),
@@ -18,6 +19,15 @@ interface DuplicateTransaction {
   name: string;
   amount: Prisma.Decimal;
   date: Date;
+}
+
+interface PeriodSummary {
+  periodLabel: string;
+  income: number;
+  expenses: number;
+  balance: number;
+  fromDate: Date;
+  toDate: Date;
 }
 
 async function findDuplicateTransactions(
@@ -62,6 +72,18 @@ const getSummaryInputSchema = z.object({
   }),
   categoryId: z.string().optional(),
   subcategoryId: z.string().optional(),
+});
+
+const getPeriodSummariesInputSchema = z.object({
+  numberOfPeriods: z.number().min(1).default(6),
+  periodMode: z.nativeEnum(Mode),
+  customPeriodBegin: z.date().optional(),
+  customPeriodEnd: z.date().optional(),
+});
+
+const getBudgetStreakInputSchema = z.object({
+  periodMode: z.nativeEnum(Mode),
+  currentPeriodBeginDate: z.date(),
 });
 
 export const transactionRouter = createTRPCRouter({
@@ -111,18 +133,16 @@ export const transactionRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { dateRange, categoryId, subcategoryId } = input;
 
-      const where = {
-        date: {
-          gte: dateRange.from,
-          lte: dateRange.to,
-        },
-        isDiscarded: false,
-        ...(categoryId && { categoryId }),
-        ...(subcategoryId && { subcategoryId }),
-      };
-
       const transactions = await ctx.db.transaction.findMany({
-        where,
+        where: {
+          date: {
+            gte: dateRange.from,
+            lte: dateRange.to,
+          },
+          isDiscarded: false,
+          ...(categoryId && { categoryId }),
+          ...(subcategoryId && { subcategoryId }),
+        },
         select: {
           amount: true,
         },
@@ -141,10 +161,175 @@ export const transactionRouter = createTRPCRouter({
       }
 
       return {
+        periodLabel: `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(dateRange.from)} ${dateRange.from.getFullYear()}`,
         income,
         expenses,
         balance: income - expenses,
-      };
+        fromDate: dateRange.from,
+        toDate: dateRange.to,
+      } satisfies PeriodSummary;
+    }),
+
+  getPeriodSummaries: publicProcedure
+    .input(getPeriodSummariesInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { numberOfPeriods, periodMode, customPeriodBegin, customPeriodEnd } = input;
+      const summaries: PeriodSummary[] = [];
+      const today = new Date();
+
+        if (periodMode === Mode.Custom) {
+        if (!customPeriodBegin || !customPeriodEnd) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'customPeriodBegin and customPeriodEnd are required for custom periodMode.',
+          });
+        }
+        const from = customPeriodBegin;
+        const to = customPeriodEnd;
+
+        const transactions = await ctx.db.transaction.findMany({
+          where: { date: { gte: from, lte: to }, isDiscarded: false },
+          select: { amount: true },
+        });
+        let income = 0;
+        let expenses = 0;
+        for (const transaction of transactions) {
+          const amount = Number(transaction.amount);
+          if (amount > 0) income += amount; else expenses += Math.abs(amount);
+        }
+        summaries.push({
+          periodLabel: `Custom: ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(from)} - ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(to)}`,
+          income,
+          expenses,
+          balance: income - expenses,
+          fromDate: from,
+          toDate: to,
+        });
+
+        const lastDate = new Date(customPeriodBegin);
+        for (let i = 1; i < numberOfPeriods; i++) {
+          lastDate.setMonth(lastDate.getMonth() - 1);
+          const year = lastDate.getFullYear();
+          const month = lastDate.getMonth();
+          const prevFrom = new Date(year, month, 1);
+          const prevTo = new Date(year, month + 1, 0);
+          
+          const prevTransactions = await ctx.db.transaction.findMany({
+            where: { date: { gte: prevFrom, lte: prevTo }, isDiscarded: false },
+            select: { amount: true },
+          });
+          let prevIncome = 0;
+          let prevExpenses = 0;
+          for (const transaction of prevTransactions) {
+            const amount = Number(transaction.amount);
+            if (amount > 0) prevIncome += amount; else prevExpenses += Math.abs(amount);
+          }
+          summaries.push({
+            periodLabel: `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(prevFrom)} ${year}`,
+            income: prevIncome,
+            expenses: prevExpenses,
+            balance: prevIncome - prevExpenses,
+            fromDate: prevFrom,
+            toDate: prevTo,
+          });
+        }
+
+      } else {
+        for (let i = 0; i < numberOfPeriods; i++) {
+          let from: Date, to: Date, year: number, periodLabel: string;
+
+          if (periodMode === Mode.Monthly) {
+            const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            year = targetDate.getFullYear();
+            const month = targetDate.getMonth();
+            from = new Date(year, month, 1);
+            to = new Date(year, month + 1, 0);
+            periodLabel = `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(targetDate)} ${year}`;
+          } else {
+            year = today.getFullYear() - i;
+            from = new Date(year, 0, 1);
+            to = new Date(year, 11, 31);
+            periodLabel = `${year}`;
+          }
+
+          const transactions = await ctx.db.transaction.findMany({
+            where: { date: { gte: from, lte: to }, isDiscarded: false },
+            select: { amount: true },
+          });
+          if (transactions.length === 0) {
+            continue;
+          }
+          let income = 0;
+          let expenses = 0;
+          for (const transaction of transactions) {
+            const amount = Number(transaction.amount);
+            if (amount > 0) income += amount; else expenses += Math.abs(amount);
+          }
+          summaries.push({
+            periodLabel,
+            income,
+            expenses,
+            balance: income - expenses,
+            fromDate: from,
+            toDate: to,
+          });
+        }
+      }
+      return summaries;
+    }),
+
+  getBudgetStreak: publicProcedure
+    .input(getBudgetStreakInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { periodMode, currentPeriodBeginDate } = input;
+      let streak = 0;
+      const dateToCheck = new Date(currentPeriodBeginDate);
+
+      while (true) {
+        let from: Date, to: Date;
+
+        if (periodMode === Mode.Yearly) {
+          dateToCheck.setFullYear(dateToCheck.getFullYear() - 1);
+          dateToCheck.setMonth(0, 1);
+          from = new Date(dateToCheck.getFullYear(), 0, 1);
+          to = new Date(dateToCheck.getFullYear(), 11, 31);
+        } else {
+          dateToCheck.setDate(1);
+          dateToCheck.setMonth(dateToCheck.getMonth() - 1);
+          from = new Date(dateToCheck.getFullYear(), dateToCheck.getMonth(), 1);
+          to = new Date(dateToCheck.getFullYear(), dateToCheck.getMonth() + 1, 0);
+        }
+        
+        if (currentPeriodBeginDate.getFullYear() - dateToCheck.getFullYear() > 10 && periodMode !== Mode.Yearly) {
+            break;
+        }
+        if (currentPeriodBeginDate.getFullYear() - dateToCheck.getFullYear() > 100 && periodMode === Mode.Yearly) {
+            break;
+        }
+
+        const transactions = await ctx.db.transaction.findMany({
+          where: { date: { gte: from, lte: to }, isDiscarded: false },
+          select: { amount: true },
+        });
+
+        if (transactions.length === 0) {
+          break;
+        }
+
+        let income = 0;
+        let expenses = 0;
+        for (const transaction of transactions) {
+          const amount = Number(transaction.amount);
+          if (amount > 0) income += amount; else expenses += Math.abs(amount);
+        }
+
+        if (expenses <= income) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      return { streak, unit: periodMode === Mode.Yearly ? "year" : "month" };
     }),
 
   update: publicProcedure
