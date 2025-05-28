@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { BudgetSummary } from "./BudgetSummary";
+import { BalanceSummary } from "./BudgetSummary";
 import { CategoryForm } from "./CategoryForm";
 import { SortableCategories } from "./SortableCategories";
 import { type BudgetTotals, type Category } from "./types";
@@ -30,7 +30,7 @@ export function BudgetPlanner() {
     categories.forEach((category: Category) => {
       const categoryTotal = category.subcategories.reduce(
         (total: number, sub) => total + Number(sub.targetAmount),
-        0
+        0,
       );
       if (category.isIncome) {
         totalIncome += categoryTotal;
@@ -52,7 +52,7 @@ export function BudgetPlanner() {
 
   return (
     <div className="space-y-8">
-      <BudgetSummary totals={calculateTotals()} />
+      <BalanceSummary totals={calculateTotals()} title="Budget Summary" />
       <CategoryForm />
 
       <Card>
@@ -61,7 +61,7 @@ export function BudgetPlanner() {
         </CardHeader>
         <CardContent>
           {categories.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
+            <p className="text-muted-foreground py-4 text-center">
               No categories added yet. Add a category to get started.
             </p>
           ) : (
@@ -74,4 +74,4 @@ export function BudgetPlanner() {
       </Card>
     </div>
   );
-} 
+}

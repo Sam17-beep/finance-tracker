@@ -1,18 +1,27 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/button"; // Assuming you have a Button component, adjust if necessary
+import { Button } from "@/components/ui/button";
 
 export function ThemeToggleButton() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <></>;
+  }
 
   return (
     <Button
-      variant="outline" // Or your preferred button variant
-      size="icon" // Assuming your Button supports a size="icon" prop for square buttons
+      variant="outline"
+      size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       aria-label={
         theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
