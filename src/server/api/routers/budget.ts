@@ -5,7 +5,6 @@ import { TRPCError } from "@trpc/server";
 const decimalSchema = z.number().positive().multipleOf(0.01).max(99999999.99);
 
 export const budgetRouter = createTRPCRouter({
-  // Category operations
   createCategory: publicProcedure
     .input(z.object({
       name: z.string().min(1).max(50),
@@ -48,7 +47,6 @@ export const budgetRouter = createTRPCRouter({
       });
     }),
 
-  // Subcategory operations
   createSubcategory: publicProcedure
     .input(z.object({
       name: z.string().min(1).max(50),
@@ -56,7 +54,6 @@ export const budgetRouter = createTRPCRouter({
       categoryId: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Verify category exists
       const category = await ctx.db.category.findUnique({
         where: { id: input.categoryId },
       });

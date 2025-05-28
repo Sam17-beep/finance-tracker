@@ -20,7 +20,6 @@ interface DuplicateTransaction {
   date: Date;
 }
 
-// Helper function to check for duplicate transactions
 async function findDuplicateTransactions(
   ctx: { db: PrismaClient },
   transactions: TransactionInput[]
@@ -56,8 +55,16 @@ const getAllInputSchema = z.object({
   pageSize: z.number().min(1).max(100).default(50),
 });
 
+const getSummaryInputSchema = z.object({
+  dateRange: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+  categoryId: z.string().optional(),
+  subcategoryId: z.string().optional(),
+});
+
 export const transactionRouter = createTRPCRouter({
-  // Get all transactions with filtering and pagination
   getAll: publicProcedure
     .input(getAllInputSchema)
     .query(async ({ ctx, input }) => {
@@ -99,8 +106,47 @@ export const transactionRouter = createTRPCRouter({
       };
     }),
 
+  getSummary: publicProcedure
+    .input(getSummaryInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { dateRange, categoryId, subcategoryId } = input;
 
-  // Update a transaction
+      const where = {
+        date: {
+          gte: dateRange.from,
+          lte: dateRange.to,
+        },
+        isDiscarded: false,
+        ...(categoryId && { categoryId }),
+        ...(subcategoryId && { subcategoryId }),
+      };
+
+      const transactions = await ctx.db.transaction.findMany({
+        where,
+        select: {
+          amount: true,
+        },
+      });
+
+      let income = 0;
+      let expenses = 0;
+
+      for (const transaction of transactions) {
+        const amount = Number(transaction.amount);
+        if (amount > 0) {
+          income += amount;
+        } else {
+          expenses += Math.abs(amount);
+        }
+      }
+
+      return {
+        income,
+        expenses,
+        balance: income - expenses,
+      };
+    }),
+
   update: publicProcedure
     .input(z.object({
       id: z.string(),
@@ -126,7 +172,6 @@ export const transactionRouter = createTRPCRouter({
       };
     }),
 
-  // Delete a transaction
   delete: publicProcedure
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
@@ -135,14 +180,11 @@ export const transactionRouter = createTRPCRouter({
       });
     }),
 
-  // Create multiple transactions
   bulkCreate: publicProcedure
     .input(z.array(transactionSchema))
     .mutation(async ({ ctx, input }) => {
-      // Check for duplicates
       const duplicates = await findDuplicateTransactions(ctx, input);
       if (duplicates.length > 0) {
-        // Filter out duplicate transactions
         const uniqueTransactions = input.filter(transaction => 
           !duplicates.some((dup: DuplicateTransaction) => 
             dup.name === transaction.name &&
@@ -158,12 +200,10 @@ export const transactionRouter = createTRPCRouter({
           });
         }
 
-        // Save only unique transactions
         const result = await ctx.db.transaction.createMany({
           data: uniqueTransactions,
         });
 
-        // Return information about skipped duplicates
         return {
           created: result.count,
           skipped: input.length - uniqueTransactions.length,
@@ -171,7 +211,6 @@ export const transactionRouter = createTRPCRouter({
         };
       }
 
-      // If no duplicates, save all transactions
       const result = await ctx.db.transaction.createMany({
         data: input,
       });

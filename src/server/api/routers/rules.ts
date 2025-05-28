@@ -31,7 +31,6 @@ const applyRuleOnAllTransactions = async (
           : transaction.name.toLowerCase().includes(rule.matchString.toLowerCase());
 
         if (matches) {
-          // If the transaction matches, update its category/subcategory and connect it to the rule
           await ctx.db.transaction.update({
             where: { id: transaction.id },
             data: {
@@ -44,8 +43,6 @@ const applyRuleOnAllTransactions = async (
             },
           });
         } else if (rule?.appliedTransactions.some(t => t.id === transaction.id)) {
-          // If the transaction no longer matches but was previously affected by this rule,
-          // remove the rule association and reset its category/subcategory
           await ctx.db.transaction.update({
             where: { id: transaction.id },
             data: {
@@ -63,7 +60,6 @@ const applyRuleOnAllTransactions = async (
 };
 
 export const rulesRouter = createTRPCRouter({
-  // Create a new rule
   create: publicProcedure
     .input(ruleSchema)
     .mutation(async ({ ctx, input }) => {
@@ -79,7 +75,6 @@ export const rulesRouter = createTRPCRouter({
       return rule;
     }),
 
-  // Get all rules with optional filtering
   getAll: publicProcedure
     .input(z.object({
       categoryId: z.string().optional(),
@@ -105,7 +100,6 @@ export const rulesRouter = createTRPCRouter({
     }),
 
 
-  // Reapply all rules to all transactions
   reapplyAllRules: publicProcedure
     .mutation(async ({ ctx }) => {
       const transactions = await ctx.db.transaction.findMany();
@@ -119,7 +113,6 @@ export const rulesRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  // Update a rule and reapply it to all transactions
   update: publicProcedure
     .input(z.object({
       id: z.string(),
@@ -139,11 +132,9 @@ export const rulesRouter = createTRPCRouter({
       return updatedRule;
     }),
 
-  // Delete a rule
   delete: publicProcedure
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
-      // First, get all transactions with this rule
       const transactions = await ctx.db.transaction.findMany({
         where: {
           appliedRules: {
@@ -152,7 +143,6 @@ export const rulesRouter = createTRPCRouter({
         },
       });
 
-      // Update each transaction to remove the rule
       await ctx.db.$transaction(
         transactions.map((transaction) =>
           ctx.db.transaction.update({
@@ -166,16 +156,14 @@ export const rulesRouter = createTRPCRouter({
         )
       );
 
-      // Then delete the rule
       return ctx.db.rule.delete({
         where: { id: input },
       });
     }),
 
-  // Apply rules to transactions
   applyRules: publicProcedure
     .input(z.array(z.object({
-      id: z.string().optional(), // Optional for new transactions
+      id: z.string().optional(),
       date: z.date(),
       name: z.string(),
       amount: z.number(),
@@ -196,7 +184,6 @@ export const rulesRouter = createTRPCRouter({
           let matchingRule = null;
           let updatedTransaction = { ...transaction };
 
-          // Find the first matching rule
           for (const rule of rules) {
             const matches = rule.matchType === "exact"
               ? transaction.name === rule.matchString
@@ -214,10 +201,8 @@ export const rulesRouter = createTRPCRouter({
             }
           }
 
-          // If this is an existing transaction (has an ID)
           if (transaction.id) {
             if (matchingRule) {
-              // Update the transaction and connect it to the rule
               await ctx.db.transaction.update({
                 where: { id: transaction.id },
                 data: {
@@ -228,7 +213,6 @@ export const rulesRouter = createTRPCRouter({
                 },
               });
             } else {
-              // Remove any rule associations
               await ctx.db.transaction.update({
                 where: { id: transaction.id },
                 data: {

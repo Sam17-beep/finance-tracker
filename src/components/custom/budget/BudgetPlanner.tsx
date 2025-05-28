@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { BalanceSummary } from "./BudgetSummary";
+import { BalanceSummary } from "./BalanceSummary";
 import { CategoryForm } from "./CategoryForm";
 import { SortableCategories } from "./SortableCategories";
 import { type BudgetTotals, type Category } from "./types";
