@@ -1,7 +1,7 @@
 import { HydrateClient } from "@/trpc/server";
 import { DateProvider } from "@/components/contexts/DateContext";
-import DateSelectorHeader from "@/components/analysis/DateSelectorHeader";
-import BudgetAnalysisChart from "@/components/analysis/BudgetAnalysisChart";
+import DateSelectorHeader from "@/components/custom/filter/DateSelectorHeader";
+import BudgetAnalysisChart from "@/components/custom/analysis/BudgetAnalysisChart";
 
 export default async function Home() {
   return (

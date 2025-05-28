@@ -11,7 +11,7 @@ import { type RouterOutputs } from "@/trpc/shared";
 import { TransactionTableRow } from "./TransactionRow";
 import { api } from "@/trpc/react";
 import { useState } from "react";
-import { type DateRange } from "@/components/ui/DateRangePicker";
+import { useDateContext } from "@/components/contexts/DateContext";
 import {
   Pagination,
   PaginationContent,
@@ -30,43 +30,36 @@ import {
 } from "@/components/ui/select";
 
 interface TransactionTableProps {
-  dateRange: DateRange;
   selectedCategory: string;
   selectedSubcategory: string;
 }
 
 export function TransactionTable({
-  dateRange,
   selectedCategory,
   selectedSubcategory,
 }: TransactionTableProps) {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
+  const { beginDate, endDate } = useDateContext();
   const utils = api.useUtils();
   const { data: categories } = api.budget.getCategories.useQuery();
   const { data: transactionsData, isLoading } = api.transaction.getAll.useQuery(
     {
-      dateRange,
+      page,
+      pageSize,
+      dateRange: { from: beginDate, to: endDate },
       categoryId: selectedCategory === "any" ? undefined : selectedCategory,
       subcategoryId:
         selectedSubcategory === "any" ? undefined : selectedSubcategory,
-      page,
-      pageSize,
-    },
-    {
-      refetchOnWindowFocus: true,
-      placeholderData: (previousData) => previousData,
-      staleTime: 1000 * 60,
     },
   );
 
   const handleTransactionChange = (
     newTransaction: RouterOutputs["transaction"]["update"],
   ) => {
-    // Update the cache for the current query
     utils.transaction.getAll.setData(
       {
-        dateRange,
+        dateRange: { from: beginDate, to: endDate },
         categoryId: selectedCategory === "any" ? undefined : selectedCategory,
         subcategoryId:
           selectedSubcategory === "any" ? undefined : selectedSubcategory,
@@ -86,10 +79,9 @@ export function TransactionTable({
   };
 
   const handleTransactionDelete = (transactionId: string) => {
-    // Update the cache for the current query
     utils.transaction.getAll.setData(
       {
-        dateRange,
+        dateRange: { from: beginDate, to: endDate },
         categoryId: selectedCategory === "any" ? undefined : selectedCategory,
         subcategoryId:
           selectedSubcategory === "any" ? undefined : selectedSubcategory,
@@ -101,7 +93,7 @@ export function TransactionTable({
         return {
           ...old,
           transactions: old.transactions.filter((t) => t.id !== transactionId),
-          total: old.total - 1, // Decrement total since we removed one item
+          total: old.total - 1,
         };
       },
     );

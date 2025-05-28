@@ -4,7 +4,9 @@ import React from "react";
 import { useDateContext } from "@/components/contexts/DateContext";
 import { Mode } from "@/domain/Date";
 
-const DateSelectorHeader: React.FC = () => {
+const DateSelectorHeader: React.FC<{ children?: React.ReactNode }> = ({
+  children,
+}) => {
   const {
     mode,
     title,
@@ -78,7 +80,11 @@ const DateSelectorHeader: React.FC = () => {
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${mode === m ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              mode === m
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
           >
             {m}
           </button>
@@ -101,7 +107,7 @@ const DateSelectorHeader: React.FC = () => {
                 value={currentInputYear}
                 onChange={handleYearChange}
                 placeholder="YYYY"
-                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:ring-offset-background mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+                className="border-input bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background placeholder:text-muted-foreground mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
               />
             </div>
             <div>
@@ -115,7 +121,7 @@ const DateSelectorHeader: React.FC = () => {
                 id="month-input"
                 value={currentInputMonth}
                 onChange={handleMonthChange}
-                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:ring-offset-background mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+                className="border-input bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background placeholder:text-muted-foreground mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((monthNum) => (
                   <option key={monthNum} value={monthNum}>
@@ -146,7 +152,7 @@ const DateSelectorHeader: React.FC = () => {
               value={currentInputYear}
               onChange={handleYearChange}
               placeholder="YYYY"
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:ring-offset-background mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+              className="border-input bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background placeholder:text-muted-foreground mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
             />
           </div>
         )}
@@ -166,7 +172,7 @@ const DateSelectorHeader: React.FC = () => {
                 value={formatDateForInput(beginDate)}
                 onChange={handleStartDateChange}
                 max={formatDateForInput(endDate)}
-                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:ring-offset-background mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+                className="border-input bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background placeholder:text-muted-foreground mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
               />
             </div>
             <div>
@@ -182,12 +188,13 @@ const DateSelectorHeader: React.FC = () => {
                 value={formatDateForInput(endDate)}
                 onChange={handleEndDateChange}
                 min={formatDateForInput(beginDate)}
-                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:ring-offset-background mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
+                className="border-input bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background placeholder:text-muted-foreground mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
               />
             </div>
           </>
         )}
       </div>
+      {children}
     </div>
   );
 };
