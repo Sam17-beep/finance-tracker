@@ -1,5 +1,18 @@
 "use client";
 
+import {
+  Mode,
+  type CustomDateRange,
+  type YearlyDate,
+  type MonthlyDate,
+  getStartOfMonth,
+  getEndOfMonth,
+  getStartOfYear,
+  getEndOfYear,
+  formatDateToYMD,
+  getMonthName,
+  numberOfMonthsInPeriod,
+} from "@/domain/Date";
 import React, {
   createContext,
   useContext,
@@ -8,56 +21,12 @@ import React, {
   useMemo,
 } from "react";
 
-// Type definitions
-export type Mode = "Custom" | "Yearly" | "Monthly";
-
-export interface CustomDateRange {
-  startDate: Date;
-  endDate: Date;
-}
-
-export interface YearlyDate {
-  year: number;
-}
-
-export interface MonthlyDate {
-  year: number;
-  month: number; // 1-12
-}
-
-// Helper functions for date calculations
-const getStartOfMonth = (year: number, month: number /* 1-12 */): Date => {
-  return new Date(year, month - 1, 1, 0, 0, 0, 0);
-};
-
-const getEndOfMonth = (year: number, month: number /* 1-12 */): Date => {
-  return new Date(year, month, 0, 23, 59, 59, 999); // Last day of current month
-};
-
-const getStartOfYear = (year: number): Date => {
-  return new Date(year, 0, 1, 0, 0, 0, 0);
-};
-
-const getEndOfYear = (year: number): Date => {
-  return new Date(year, 11, 31, 23, 59, 59, 999);
-};
-
-const formatDateToYMD = (date: Date): string => {
-  const parts = date.toISOString().split("T");
-  return parts[0] ?? "";
-};
-
-const getMonthName = (month: number, locale = "en-US"): string => {
-  const date = new Date();
-  date.setMonth(month - 1);
-  return date.toLocaleString(locale, { month: "long" });
-};
-
 interface DateContextType {
   mode: Mode;
   beginDate: Date;
   endDate: Date;
   title: string;
+  numberOfMonths: number;
   setMode: (newMode: Mode) => void; // Allows manually changing mode, adjusting dates if needed
   setCustomDateRange: (startDate: Date, endDate: Date) => void; // Sets mode to Custom
   setSelectedYear: (year: number) => void; // Sets mode to Yearly
@@ -75,11 +44,10 @@ interface DateProviderProps {
 export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
   const today = new Date();
   const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1; // 1-12
+  const currentMonth = today.getMonth() + 1;
 
-  const [mode, setModeInternal] = useState<Mode>("Monthly");
+  const [mode, setModeInternal] = useState<Mode>(Mode.Monthly);
 
-  // Internal state for each mode's specific date details
   const [customDatesState, setCustomDatesInternal] = useState<CustomDateRange>({
     startDate: getStartOfMonth(currentYear, currentMonth),
     endDate: getEndOfMonth(currentYear, currentMonth),
@@ -94,33 +62,33 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
 
   const handleSetCustomDateRange = (startDate: Date, endDate: Date) => {
     setCustomDatesInternal({ startDate, endDate });
-    setModeInternal("Custom");
+    setModeInternal(Mode.Custom);
   };
 
   const handleSetSelectedYear = (year: number) => {
     setYearlyDateInternal({ year });
-    setModeInternal("Yearly");
+    setModeInternal(Mode.Yearly);
   };
 
   const handleSetSelectedMonth = (year: number, month: number) => {
     setMonthlyDateInternal({ year, month });
-    setModeInternal("Monthly");
+    setModeInternal(Mode.Monthly);
   };
 
   const derivedDates = useMemo(() => {
     switch (mode) {
-      case "Custom":
+      case Mode.Custom:
         return {
           beginDate: customDatesState.startDate,
           endDate: customDatesState.endDate,
         };
-      case "Yearly":
+      case Mode.Yearly:
         return {
           beginDate: getStartOfYear(yearlyDateState.year),
           endDate: getEndOfYear(yearlyDateState.year),
         };
-      case "Monthly":
-      default: // Default to monthly if mode is somehow invalid
+      case Mode.Monthly:
+      default:
         return {
           beginDate: getStartOfMonth(
             monthlyDateState.year,
@@ -133,29 +101,37 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
 
   const title = useMemo(() => {
     switch (mode) {
-      case "Custom":
+      case Mode.Custom:
         return `${formatDateToYMD(derivedDates.beginDate)} - ${formatDateToYMD(derivedDates.endDate)}`;
-      case "Yearly":
+      case Mode.Yearly:
         return `${yearlyDateState.year}`;
-      case "Monthly":
-      default:
+      case Mode.Monthly:
         return `${getMonthName(monthlyDateState.month)} ${monthlyDateState.year}`;
     }
   }, [mode, derivedDates, yearlyDateState, monthlyDateState]);
+
+  const numberOfMonths = useMemo(
+    () =>
+      numberOfMonthsInPeriod(
+        derivedDates.beginDate,
+        derivedDates.endDate,
+        mode,
+      ),
+    [mode, derivedDates.beginDate, derivedDates.endDate],
+  );
 
   const contextValue = useMemo(() => {
     const handleSetMode = (newMode: Mode) => {
       const oldMode = mode;
       setModeInternal(newMode);
 
-      // When switching TO 'Custom', adjust custom dates based on the previous mode
-      if (newMode === "Custom" && oldMode !== "Custom") {
-        if (oldMode === "Yearly") {
+      if (newMode === Mode.Custom && oldMode !== Mode.Custom) {
+        if (oldMode === Mode.Yearly) {
           setCustomDatesInternal({
             startDate: getStartOfYear(yearlyDateState.year),
             endDate: getEndOfYear(yearlyDateState.year),
           });
-        } else if (oldMode === "Monthly") {
+        } else if (oldMode === Mode.Monthly) {
           setCustomDatesInternal({
             startDate: getStartOfMonth(
               monthlyDateState.year,
@@ -167,7 +143,6 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
             ),
           });
         }
-        // If oldMode was already 'Custom', customDatesState remains as is.
       }
     };
     return {
@@ -175,6 +150,7 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
       beginDate: derivedDates.beginDate,
       endDate: derivedDates.endDate,
       title,
+      numberOfMonths,
       setMode: handleSetMode,
       setCustomDateRange: handleSetCustomDateRange,
       setSelectedYear: handleSetSelectedYear,
@@ -185,6 +161,7 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
     derivedDates.beginDate,
     derivedDates.endDate,
     title,
+    numberOfMonths,
     yearlyDateState.year,
     monthlyDateState.year,
     monthlyDateState.month,
@@ -198,9 +175,7 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
 export const useDateContext = (): DateContextType => {
   const context = useContext(DateContext);
   if (!context) {
-    throw new Error(
-      "useAnalysisContext must be used within an AnalysisProvider",
-    );
+    throw new Error("useDateContext must be used within a DateProvider");
   }
   return context;
 };

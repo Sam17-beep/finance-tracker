@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { useDateContext, type Mode } from "@/contexts/DateContext";
+import { useDateContext } from "@/components/contexts/DateContext";
+import { Mode } from "@/domain/Date";
 
 const DateSelectorHeader: React.FC = () => {
   const {
@@ -18,9 +19,9 @@ const DateSelectorHeader: React.FC = () => {
   const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const year = parseInt(e.target.value, 10);
     if (!isNaN(year)) {
-      if (mode === "Yearly") {
+      if (mode === Mode.Yearly) {
         setSelectedYear(year);
-      } else if (mode === "Monthly") {
+      } else if (mode === Mode.Monthly) {
         setSelectedMonth(year, beginDate.getMonth() + 1);
       }
     }
@@ -28,7 +29,7 @@ const DateSelectorHeader: React.FC = () => {
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const month = parseInt(e.target.value, 10);
-    if (!isNaN(month) && mode === "Monthly") {
+    if (!isNaN(month) && mode === Mode.Monthly) {
       setSelectedMonth(beginDate.getFullYear(), month);
     }
   };
@@ -38,7 +39,7 @@ const DateSelectorHeader: React.FC = () => {
     if (!newStartDateString) return;
     const newStartDate = new Date(newStartDateString + "T00:00:00");
 
-    if (!isNaN(newStartDate.getTime()) && mode === "Custom") {
+    if (!isNaN(newStartDate.getTime()) && mode === Mode.Custom) {
       const currentEndDate =
         endDate > newStartDate
           ? endDate
@@ -52,7 +53,7 @@ const DateSelectorHeader: React.FC = () => {
     if (!newEndDateString) return;
     const newEndDate = new Date(newEndDateString + "T00:00:00");
 
-    if (!isNaN(newEndDate.getTime()) && mode === "Custom") {
+    if (!isNaN(newEndDate.getTime()) && mode === Mode.Custom) {
       const currentStartDate =
         beginDate < newEndDate
           ? beginDate
@@ -85,7 +86,7 @@ const DateSelectorHeader: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {mode === "Monthly" && (
+        {mode === Mode.Monthly && (
           <>
             <div>
               <label
@@ -131,7 +132,7 @@ const DateSelectorHeader: React.FC = () => {
           </>
         )}
 
-        {mode === "Yearly" && (
+        {mode === Mode.Yearly && (
           <div>
             <label
               htmlFor="year-input-yearly"
@@ -150,7 +151,7 @@ const DateSelectorHeader: React.FC = () => {
           </div>
         )}
 
-        {mode === "Custom" && (
+        {mode === Mode.Custom && (
           <>
             <div>
               <label
