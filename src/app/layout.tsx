@@ -65,7 +65,7 @@ export default function RootLayout({
                     </div>
                   </nav>
                 </aside>
-                {children}
+                <main className="main-page">{children}</main>
                 <Toaster />
               </div>
             </DateProvider>

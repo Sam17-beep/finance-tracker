@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Do not comment anything except really weird code manipulation.
+Always make sure sure to used variable present in the global.css file. If you want to use a new color define it in the light and dark theme in global.css.
+Always prioritize using shadcn component like Card and other thing over a lot of css.

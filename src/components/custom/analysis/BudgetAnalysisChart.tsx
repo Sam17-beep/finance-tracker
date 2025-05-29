@@ -4,27 +4,53 @@ import React, { useMemo, useState, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useDateContext } from "@/components/contexts/DateContext";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { type BudgetAnalysisItem } from "@/server/api/routers/analysis";
+import {
+  type TooltipProps,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ReferenceLine,
+  Bar,
+  BarChart,
+  Rectangle,
+} from "recharts";
+import { type BarProps } from "recharts";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-interface ChartDataItem {
-  name: string;
-  goal: number;
-  spending: number;
+interface ChartDisplayItem extends BudgetAnalysisItem {
+  percentageSpent: number;
 }
+
+const CustomTooltipContent = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
+  const dataItem = active ? (payload?.[0]?.payload as ChartDisplayItem) : null;
+
+  if (dataItem) {
+    return (
+      <div className="bg-background rounded-lg border p-2.5 text-sm shadow-lg">
+        <p className="mb-1.5 font-medium">{label}</p>
+        <div className="space-y-1">
+          <p style={{ color: payload?.[0]?.color ?? "inherit" }}>
+            {`Spent: $${Number(dataItem.spending).toLocaleString()} (${dataItem.percentageSpent.toFixed(0)}%)`}
+          </p>
+          <p>{`Goal: $${Number(dataItem.goal).toLocaleString()}`}</p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const BudgetAnalysisChart = () => {
   const dateContext = useDateContext();
@@ -38,7 +64,7 @@ const BudgetAnalysisChart = () => {
     data: serverChartData,
     isLoading: isLoadingChartData,
     error: chartDataError,
-  } = api.analysis.getBudgetAnalysisChartData.useQuery({
+  } = api.analysis.getBudgetAnalysis.useQuery({
     dateRange: { from: beginDate, to: endDate },
     dateMode: dateContext.mode,
   });
@@ -46,31 +72,53 @@ const BudgetAnalysisChart = () => {
   useEffect(() => {
     if (serverChartData) {
       const initialVisibility: Record<string, boolean> = {};
-      serverChartData.forEach((item) => {
-        initialVisibility[item.name] = true;
+      serverChartData.forEach((item: BudgetAnalysisItem) => {
+        if (item && typeof item.name === "string") {
+          initialVisibility[item.name] = true;
+        }
       });
       setVisibleCategories(initialVisibility);
     }
   }, [serverChartData]);
 
-  const chartData: ChartDataItem[] = useMemo(() => {
-    if (!serverChartData || Object.keys(visibleCategories).length === 0) {
+  const chartData: ChartDisplayItem[] = useMemo(() => {
+    if (!serverChartData) {
       return [];
     }
-    return serverChartData.filter(
-      (item) => visibleCategories[item.name] !== false,
+
+    const processedData: ChartDisplayItem[] = serverChartData.map(
+      (item: BudgetAnalysisItem) => {
+        const goal = Number(item.goal) || 0;
+        const spending = Number(item.spending) || 0;
+        let percentageSpent = 0;
+
+        if (goal > 0) {
+          percentageSpent = Math.min((spending / goal) * 100, 200);
+        } else if (spending > 0) {
+          percentageSpent = 200;
+        }
+
+        return {
+          ...item,
+          goal,
+          spending,
+          percentageSpent,
+        };
+      },
+    );
+
+    return processedData.filter(
+      (item) => item.name && visibleCategories[item.name] !== false,
     );
   }, [serverChartData, visibleCategories]);
 
   const chartConfig = {
-    goal: {
-      label: "Goal",
-      color: "hsl(var(--chart-1))",
-    },
-    spending: {
-      label: "Spending",
+    percentageSpent: {
+      label: "Spending (% of Goal)",
       color: "hsl(var(--chart-2))",
     },
+    goal: { label: "Goal", color: "hsl(var(--chart-1))" },
+    spending: { label: "Spending", color: "hsl(var(--chart-2))" },
   } satisfies ChartConfig;
 
   if (!beginDate || !endDate) {
@@ -90,92 +138,114 @@ const BudgetAnalysisChart = () => {
   }
 
   return (
-    <section className="mt-8 rounded-lg p-4 shadow-sm md:p-6 dark:bg-slate-700">
-      <h2 className="mb-4 text-xl font-semibold">
+    <Card>
+      <h2 className="text-xl font-semibold">
         Budget Analysis (Goal vs. Spending)
       </h2>
-      <div className="min-h-[300px] rounded-lg border border-dashed border-gray-300 p-4 sm:min-h-[400px]">
-        {serverChartData && serverChartData.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-md border p-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {serverChartData.map((item) => (
-              <div key={item.name} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={`vis-toggle-${item.name.replace(/\s+/g, "-")}`}
-                  className="form-checkbox text-primary-600 focus:ring-primary-500 h-4 w-4 rounded border-gray-300 transition duration-150 ease-in-out"
-                  checked={visibleCategories[item.name] !== false}
-                  onChange={() => {
-                    setVisibleCategories((prev) => ({
-                      ...prev,
-                      [item.name]: !prev[item.name],
-                    }));
-                  }}
-                />
-                <label
-                  htmlFor={`vis-toggle-${item.name.replace(/\s+/g, "-")}`}
-                  className="text-sm select-none"
-                >
-                  {item.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {chartData.length === 0 && !isLoadingChartData ? (
-          <p className="text-gray-500">
-            No data to display. Try selecting categories or a different period.
-          </p>
-        ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="min-h-[300px] w-full sm:min-h-[450px]"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+      {serverChartData && serverChartData.length > 0 && (
+        <Card className="mx-12 flex flex-row flex-wrap justify-around gap-12 px-12">
+          {serverChartData.map((item) => (
+            <div key={item.name} className="flex items-center gap-2">
+              <Input
+                type="checkbox"
+                id={`vis-toggle-${item.name.replace(/\s+/g, "-")}`}
+                className="h-4 w-4 rounded-2xl"
+                checked={visibleCategories[item.name] !== false}
+                onChange={() => {
+                  setVisibleCategories((prev) => ({
+                    ...prev,
+                    [item.name]: !prev[item.name],
+                  }));
+                }}
+              />
+              <label
+                htmlFor={`vis-toggle-${item.name.replace(/\s+/g, "-")}`}
+                className="text-sm select-none"
               >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  interval={0}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  tickFormatter={(value) =>
-                    `$${Number(value).toLocaleString()}`
-                  }
-                />
-                <ChartTooltip
-                  cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Bar
-                  dataKey="goal"
-                  fill="var(--color-goal)"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  dataKey="spending"
-                  fill="var(--color-spending)"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        )}
-      </div>
-    </section>
+                {item.name}
+              </label>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {chartData.length === 0 && !isLoadingChartData ? (
+        <p className="text-gray-500">
+          No data to display. Try selecting categories or a different period.
+        </p>
+      ) : (
+        <ChartContainer config={chartConfig} className="w-full">
+          <BarChart data={chartData}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={10}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              interval={0}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={10}
+              tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+              domain={[0, "dataMax + 10"]}
+            />
+            <ReferenceLine
+              y={100}
+              stroke="var(--chart-5)"
+              strokeDasharray="3 3"
+              strokeWidth={2}
+            />
+            <ChartTooltip cursor={false} content={<CustomTooltipContent />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="percentageSpent"
+              fill="var(--chart-2)"
+              radius={[4, 4, 0, 0]}
+              name={chartConfig.percentageSpent.label}
+              activeBar={(props: BarProps) => {
+                const { x, y, width, height } = props;
+                const padding = 4;
+
+                if (
+                  typeof x !== "number" ||
+                  typeof y !== "number" ||
+                  typeof width !== "number" ||
+                  typeof height !== "number" ||
+                  width <= 0 ||
+                  height === undefined
+                ) {
+                  return (
+                    <Rectangle
+                      x={0}
+                      y={0}
+                      width={0}
+                      height={0}
+                      fill="transparent"
+                    />
+                  );
+                }
+
+                return (
+                  <Rectangle
+                    x={x - padding}
+                    y={y - padding}
+                    width={width + 2 * padding}
+                    height={height + 2 * padding}
+                    fill="var(--chart-3)"
+                    radius={6}
+                  />
+                );
+              }}
+            />
+          </BarChart>
+        </ChartContainer>
+      )}
+    </Card>
   );
 };
 

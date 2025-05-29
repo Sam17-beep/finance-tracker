@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Always put frontend logic into hook except if really simple. The hooks folder is src/hooks.
+Always put a maximun of the logic into the backend.
+Put shared logic between the backend and frontend like types and utils into the domain folder (src/domain).
+Make sure to split component to subcomponent a lot.

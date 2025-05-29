@@ -3,7 +3,7 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { Mode, numberOfMonthsInPeriod } from "@/domain/Date";
 
 
-export interface BudgetTrackerItem {
+export interface BudgetAnalysisItem {
   name: string;
   goal: number;
   spending: number;
@@ -11,7 +11,7 @@ export interface BudgetTrackerItem {
 }
 
 export const analysisRouter = createTRPCRouter({
-  getBudgetAnalysisChartData: publicProcedure
+  getBudgetAnalysis: publicProcedure
     .input(
       z.object({
         dateRange: z.object({
@@ -42,7 +42,7 @@ export const analysisRouter = createTRPCRouter({
         },
       });
 
-      const chartDataItems: BudgetTrackerItem[] = categories.map((category) => {
+      const chartDataItems: BudgetAnalysisItem[] = categories.map((category) => {
         const monthlyGoal = category.subcategories.reduce(
           (sum, sc) => sum + Number(sc.targetAmount), 
           0,
