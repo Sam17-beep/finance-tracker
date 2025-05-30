@@ -21,7 +21,7 @@ interface DuplicateTransaction {
   date: Date;
 }
 
-interface PeriodSummary {
+export interface PeriodSummary {
   periodLabel: string;
   income: number;
   expenses: number;
@@ -54,6 +54,16 @@ async function findDuplicateTransactions(
   return duplicates;
 }
 
+async function getDateOfOldestTransaction(ctx: { db: PrismaClient }): Promise<Date | null> {
+  const oldestTransaction = await ctx.db.transaction.findFirst({
+    orderBy: {
+      date: "asc",
+    },
+  });
+
+  return oldestTransaction?.date ?? null;
+}
+
 const getAllInputSchema = z.object({
   dateRange: z.object({
     from: z.date(),
@@ -79,6 +89,7 @@ const getPeriodSummariesInputSchema = z.object({
   periodMode: z.nativeEnum(Mode),
   customPeriodBegin: z.date().optional(),
   customPeriodEnd: z.date().optional(),
+  offset: z.number().min(0).optional().default(0),
 });
 
 const getBudgetStreakInputSchema = z.object({
@@ -173,80 +184,74 @@ export const transactionRouter = createTRPCRouter({
   getPeriodSummaries: publicProcedure
     .input(getPeriodSummariesInputSchema)
     .query(async ({ ctx, input }) => {
-      const { numberOfPeriods, periodMode, customPeriodBegin, customPeriodEnd } = input;
+      const { numberOfPeriods, periodMode, customPeriodBegin, customPeriodEnd, offset } = input;
       const summaries: PeriodSummary[] = [];
       const today = new Date();
 
-        if (periodMode === Mode.Custom) {
+      if (periodMode === Mode.Custom) {
         if (!customPeriodBegin || !customPeriodEnd) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'customPeriodBegin and customPeriodEnd are required for custom periodMode.',
           });
         }
-        const from = customPeriodBegin;
-        const to = customPeriodEnd;
+        
+        for (let i = 0; i < numberOfPeriods; i++) {
+          const currentConceptualIndex = offset + i;
+          let from: Date, to: Date, periodLabel: string;
+          let year: number;
 
-        const transactions = await ctx.db.transaction.findMany({
-          where: { date: { gte: from, lte: to }, isDiscarded: false },
-          select: { amount: true },
-        });
-        let income = 0;
-        let expenses = 0;
-        for (const transaction of transactions) {
-          const amount = Number(transaction.amount);
-          if (amount > 0) income += amount; else expenses += Math.abs(amount);
-        }
-        summaries.push({
-          periodLabel: `Custom: ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(from)} - ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(to)}`,
-          income,
-          expenses,
-          balance: income - expenses,
-          fromDate: from,
-          toDate: to,
-        });
+          if (currentConceptualIndex === 0) {
+            from = customPeriodBegin;
+            to = customPeriodEnd;
+            periodLabel = `Custom: ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(from)} - ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(to)}`;
+          } else {
+            const monthOffsetPrior = currentConceptualIndex;
+            const baseDate = new Date(customPeriodBegin);
+            baseDate.setDate(1);
+            baseDate.setMonth(baseDate.getMonth() - monthOffsetPrior);
+            
+            year = baseDate.getFullYear();
+            const month = baseDate.getMonth();
+            from = new Date(year, month, 1);
+            to = new Date(year, month + 1, 0);
+            periodLabel = `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(from)} ${year}`;
+          }
 
-        const lastDate = new Date(customPeriodBegin);
-        for (let i = 1; i < numberOfPeriods; i++) {
-          lastDate.setMonth(lastDate.getMonth() - 1);
-          const year = lastDate.getFullYear();
-          const month = lastDate.getMonth();
-          const prevFrom = new Date(year, month, 1);
-          const prevTo = new Date(year, month + 1, 0);
-          
-          const prevTransactions = await ctx.db.transaction.findMany({
-            where: { date: { gte: prevFrom, lte: prevTo }, isDiscarded: false },
+          const transactions = await ctx.db.transaction.findMany({
+            where: { date: { gte: from, lte: to }, isDiscarded: false },
             select: { amount: true },
           });
-          let prevIncome = 0;
-          let prevExpenses = 0;
-          for (const transaction of prevTransactions) {
+
+          let income = 0;
+          let expenses = 0;
+          for (const transaction of transactions) {
             const amount = Number(transaction.amount);
-            if (amount > 0) prevIncome += amount; else prevExpenses += Math.abs(amount);
+            if (amount > 0) income += amount; else expenses += Math.abs(amount);
           }
           summaries.push({
-            periodLabel: `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(prevFrom)} ${year}`,
-            income: prevIncome,
-            expenses: prevExpenses,
-            balance: prevIncome - prevExpenses,
-            fromDate: prevFrom,
-            toDate: prevTo,
+            periodLabel,
+            income,
+            expenses,
+            balance: income - expenses,
+            fromDate: from,
+            toDate: to,
           });
         }
-
       } else {
         for (let i = 0; i < numberOfPeriods; i++) {
+          const actualPeriodPastIndex = offset + i;
           let from: Date, to: Date, year: number, periodLabel: string;
 
           if (periodMode === Mode.Monthly) {
-            const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const targetDate = new Date(today.getFullYear(), today.getMonth() - actualPeriodPastIndex, 1);
             year = targetDate.getFullYear();
             const month = targetDate.getMonth();
             from = new Date(year, month, 1);
             to = new Date(year, month + 1, 0);
             periodLabel = `${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(targetDate)} ${year}`;
           } else {
-            year = today.getFullYear() - i;
+            year = today.getFullYear() - actualPeriodPastIndex;
             from = new Date(year, 0, 1);
             to = new Date(year, 11, 31);
             periodLabel = `${year}`;
@@ -256,9 +261,7 @@ export const transactionRouter = createTRPCRouter({
             where: { date: { gte: from, lte: to }, isDiscarded: false },
             select: { amount: true },
           });
-          if (transactions.length === 0) {
-            continue;
-          }
+
           let income = 0;
           let expenses = 0;
           for (const transaction of transactions) {
@@ -275,7 +278,11 @@ export const transactionRouter = createTRPCRouter({
           });
         }
       }
-      return summaries;
+      return {
+        summaries,
+        nextPageOffset: summaries.length === numberOfPeriods ? offset + summaries.length : undefined,
+        hasMore: summaries.length === numberOfPeriods,
+      };
     }),
 
   getBudgetStreak: publicProcedure

@@ -1,6 +1,14 @@
 "use client";
 
 import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface PeriodSummaryDisplayProps {
   periodLabel: string;
@@ -15,79 +23,104 @@ const PeriodSummaryDisplay: React.FC<PeriodSummaryDisplayProps> = ({
   expenses,
   isCurrent,
 }) => {
-  const spendingPercentage = income > 0 ? (expenses / income) * 100 : 0;
-  const cappedPercentage = Math.min(spendingPercentage, 100); // Cap at 100% for the graph
-  const radius = isCurrent ? 60 : 40;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    circumference - (cappedPercentage / 100) * circumference;
+  const spending = Math.max(0, expenses);
+
+  const percentageSpent =
+    income > 0 ? (spending / income) * 100 : spending > 0 ? 100 : 0;
+  const displayPercentage = Math.min(percentageSpent, 100);
+  const overBudgetPercentage = Math.max(0, percentageSpent - 100);
 
   const balance = income - expenses;
   const isOverBudget = balance < 0;
+
   const balanceText = isOverBudget
     ? `$${Math.abs(balance).toFixed(2)} over`
     : `$${balance.toFixed(2)} left`;
 
-  const circleColor = isOverBudget ? "stroke-red-500" : "stroke-green-500";
-  const textColor = isOverBudget ? "text-red-500" : "text-green-500";
+  const pieData = [
+    {
+      name: "Spent",
+      value: displayPercentage,
+      fill: isOverBudget ? "var(--destructive)" : "var(--success)",
+    },
+    {
+      name: "Remaining",
+      value: 100 - displayPercentage,
+      fill: "var(--border)",
+    },
+  ];
+
+  if (overBudgetPercentage > 0) {
+    pieData.push({
+      name: "Over Budget",
+      value: overBudgetPercentage,
+      fill: "var(--destructive)",
+    });
+    if (percentageSpent > 100) {
+      if (pieData[0]) {
+        pieData[0].value = 100;
+      }
+      if (pieData[1]) {
+        pieData[1].value = 0;
+      }
+    }
+  }
+
+  const chartSize = isCurrent ? 140 : 100;
+  const innerRadius = isCurrent ? 50 : 35;
+  const outerRadius = isCurrent ? 70 : 50;
 
   return (
-    <div
-      className={`border-primary/10 flex flex-col items-center border p-4 ${
-        isCurrent
-          ? "bg-foreground-secondary rounded-lg"
-          : "bg-foreground-secondary rounded-md"
-      }`}
-    >
-      <h3
-        className={`text-sm font-semibold ${isCurrent ? "mb-2 text-lg" : "mb-1"} dark:text-white`}
-      >
-        {periodLabel}
-      </h3>
-      <div className="relative">
-        <svg
-          width={isCurrent ? "140" : "100"}
-          height={isCurrent ? "140" : "100"}
-          viewBox={isCurrent ? "0 0 140 140" : "0 0 100 100"}
-          className="-rotate-90 transform"
+    <Card className={`flex h-full max-h-[400px] flex-col items-center`}>
+      <CardHeader className="w-full">
+        <CardTitle
+          className={`${isCurrent ? "text-lg" : "text-md"} text-center font-semibold`}
         >
-          <circle
-            cx={isCurrent ? "70" : "50"}
-            cy={isCurrent ? "70" : "50"}
-            r={radius}
-            stroke="rgba(255, 255, 255, 0.1)"
-            strokeWidth={isCurrent ? "12" : "8"}
-            fill="transparent"
-          />
-          <circle
-            cx={isCurrent ? "70" : "50"}
-            cy={isCurrent ? "70" : "50"}
-            r={radius}
-            className={`${circleColor} transition-all duration-500 ease-in-out`}
-            strokeWidth={isCurrent ? "12" : "8"}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            className={`text-xs ${isCurrent ? "text-base" : ""} font-bold dark:text-white`}
-          >
-            {`${Math.round(spendingPercentage)}%`}
-          </span>
-          {isCurrent && (
+          {periodLabel}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex h-full flex-col items-center justify-center">
+        <div
+          style={{ width: chartSize, height: chartSize }}
+          className="relative"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                startAngle={90}
+                endAngle={-270}
+                dataKey="value"
+                stroke="none"
+                isAnimationActive={true}
+                animationDuration={1000}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span
+              className={`font-bold ${isCurrent ? "text-base" : "text-xs"}`}
+            >
+              {`${Math.round(percentageSpent)}%`}
+            </span>
             <span className="text-muted-foreground text-xs">spent</span>
-          )}
+          </div>
         </div>
-      </div>
-      <p
-        className={`mt-2 text-xs ${isCurrent ? "text-base font-medium" : "font-normal"} ${textColor}`}
-      >
-        {balanceText}
-      </p>
-    </div>
+        <CardDescription
+          className={`mt-3 font-medium ${isCurrent ? "text-base" : "text-xs"} ${isOverBudget ? "text-destructive" : "text-success"}`}
+        >
+          {balanceText}
+        </CardDescription>
+      </CardContent>
+    </Card>
   );
 };
 

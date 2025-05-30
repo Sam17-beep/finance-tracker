@@ -2,22 +2,26 @@
 
 import { api } from "@/trpc/react";
 import PeriodSummaryDisplay from "./PeriodSummaryDisplay";
+import PastPeriodsCarousel from "./PastPeriodsCarousel";
 import { useDateContext } from "@/components/contexts/DateContext";
 import { Mode } from "@/domain/Date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 const Streak = () => {
   const { beginDate, endDate, mode } = useDateContext();
 
   const {
-    data: summaries,
+    data: summariesData,
     isLoading: isLoadingSummaries,
     error: errorSummaries,
   } = api.transaction.getPeriodSummaries.useQuery({
     periodMode: mode,
     customPeriodBegin: mode === Mode.Custom ? beginDate : undefined,
     customPeriodEnd: mode === Mode.Custom ? endDate : undefined,
+    numberOfPeriods: 1,
   });
+  const currentPeriod = summariesData?.summaries?.[0];
 
   const {
     data: streakData,
@@ -33,23 +37,28 @@ const Streak = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-gray-500">Loading budget streak...</p>
-      </div>
+      <Card className="flex h-64 items-center justify-center">
+        <CardContent className="flex flex-col items-center">
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground mt-2">Loading budget streak...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="my-4 rounded border border-red-400 bg-red-100 p-4 text-red-700">
-        <p>Error loading budget data: {error.message}</p>
-      </div>
+      <Card className="border-destructive bg-destructive/10 my-4">
+        <CardHeader>
+          <CardTitle className="text-destructive">Error</CardTitle>
+        </CardHeader>
+        <CardContent className="text-destructive">
+          <p>Error loading budget data: {error.message}</p>
+        </CardContent>
+      </Card>
     );
   }
 
-  const validSummaries = Array.isArray(summaries) ? summaries : [];
-  const currentPeriod = validSummaries[0];
-  const pastPeriods = validSummaries.slice(1);
   const streakCount = streakData?.streak ?? 0;
   const streakUnit =
     streakData?.unit ?? (mode === Mode.Yearly ? "year" : "month");
@@ -62,51 +71,36 @@ const Streak = () => {
 
   return (
     <Card>
-      <CardHeader className="text-xl">Streaks</CardHeader>
-      <CardContent>
-        {currentPeriod && (
-          <div className="mb-6 flex flex-col items-center md:mb-0">
-            <h2 className="mb-3 text-xl font-semibold">{currentPeriodTitle}</h2>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Streaks & Periods</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-8">
+        <div className="flex flex-col items-center gap-3">
+          <h2 className="text-center text-xl font-semibold">
+            {currentPeriodTitle}
+          </h2>
+          {currentPeriod ? (
             <PeriodSummaryDisplay
               periodLabel={currentPeriod.periodLabel}
               income={currentPeriod.income}
               expenses={currentPeriod.expenses}
               isCurrent={true}
             />
-          </div>
-        )}
-        {!currentPeriod && !isLoading && (
-          <div className="mb-6 flex flex-col items-center md:mb-0">
-            <h2 className="mb-3 text-xl font-semibold">{currentPeriodTitle}</h2>
-            <p className="text-gray-500">No data for current period.</p>
-          </div>
-        )}
-
-        <div className="flex h-full flex-col items-center justify-between">
-          <h2 className="mb-1 text-center text-lg font-semibold text-orange-400">
-            🔥 {streakCount} {streakUnit}
-            {streakCount > 1 ? "s" : ""} streak 🔥
-          </h2>
-          {pastPeriods.length > 0 && (
-            <div className="flex flex-wrap justify-center md:justify-start">
-              {pastPeriods.map((period) => (
-                <div key={period.periodLabel} className="m-1">
-                  <PeriodSummaryDisplay
-                    periodLabel={period.periodLabel}
-                    income={period.income}
-                    expenses={period.expenses}
-                    isCurrent={false}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-          {pastPeriods.length === 0 && streakCount === 0 && (
-            <p className="mt-2 text-center text-gray-400 md:text-left">
-              No past period data or streak to show.
-            </p>
+          ) : (
+            <p className="text-muted-foreground">No data for current period.</p>
           )}
         </div>
+
+        <div className="flex flex-col items-center justify-center gap-2">
+          <h2
+            className={`text-2xl font-bold ${streakCount > 0 ? "text-orange-400" : "text-muted-foreground"}`}
+          >
+            🔥 {streakCount} {streakUnit}
+            {streakCount !== 1 ? "s" : ""} streak 🔥
+          </h2>
+        </div>
+
+        <PastPeriodsCarousel />
       </CardContent>
     </Card>
   );
