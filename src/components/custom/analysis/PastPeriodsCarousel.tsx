@@ -16,8 +16,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Loader2 } from "lucide-react";
-import { type PeriodSummary } from "@/server/api/routers/transaction";
 import { usePastPeriodsData } from "@/hooks/usePastPeriodsData";
+import { Card } from "@/components/ui/card";
+import { type PeriodSummary } from "@/domain/Transaction";
 
 const PastPeriodsCarousel = () => {
   const [api, setApi] = useState<CarouselApi>();
@@ -29,9 +30,7 @@ const PastPeriodsCarousel = () => {
     fetchMorePeriods,
     error,
     hasMoreData,
-  } = usePastPeriodsData({
-    initialOffset: 1,
-  });
+  } = usePastPeriodsData();
 
   useEffect(() => {
     if (!api) {
@@ -84,15 +83,19 @@ const PastPeriodsCarousel = () => {
         <CarouselContent>
           {allPastPeriods.map((period: PeriodSummary, index: number) => (
             <CarouselItem
-              key={`${period.periodLabel}-${index}`}
+              key={`${period.periodTitle}-${index}`}
               className="basis-full md:basis-1/3 lg:basis-1/5"
             >
-              <PeriodSummaryDisplay
-                periodLabel={period.periodLabel}
-                income={period.income}
-                expenses={period.expenses}
-                isCurrent={false}
-              />
+              <Card
+                className={`flex h-full max-h-[400px] flex-col items-center`}
+              >
+                <PeriodSummaryDisplay
+                  periodLabel={period.periodTitle}
+                  income={period.income}
+                  expenses={period.expenses}
+                  isCurrent={false}
+                />
+              </Card>
             </CarouselItem>
           ))}
           {isFetchingMore && (

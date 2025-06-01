@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -71,7 +70,7 @@ const PeriodSummaryDisplay: React.FC<PeriodSummaryDisplayProps> = ({
   const outerRadius = isCurrent ? 70 : 50;
 
   return (
-    <Card className={`flex h-full max-h-[400px] flex-col items-center`}>
+    <>
       <CardHeader className="w-full">
         <CardTitle
           className={`${isCurrent ? "text-lg" : "text-md"} text-center font-semibold`}
@@ -120,7 +119,7 @@ const PeriodSummaryDisplay: React.FC<PeriodSummaryDisplayProps> = ({
           {balanceText}
         </CardDescription>
       </CardContent>
-    </Card>
+    </>
   );
 };
 

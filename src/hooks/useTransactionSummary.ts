@@ -10,7 +10,7 @@ export function useTransactionSummary({
   selectedCategory,
   selectedSubcategory,
 }: UseTransactionSummaryProps) {
-  const { beginDate, endDate } = useDateContext();
+  const { beginDate, endDate, mode } = useDateContext();
 
   const {
     data: summaryData,
@@ -21,6 +21,7 @@ export function useTransactionSummary({
       dateRange: { from: beginDate, to: endDate },
       categoryId: !selectedCategory || selectedCategory === "any" ? undefined : selectedCategory,
       subcategoryId: !selectedSubcategory || selectedSubcategory === "any" ? undefined : selectedSubcategory,
+      periodMode: mode,
     },
   );
 

@@ -3,20 +3,17 @@
 import { api } from "@/trpc/react";
 import PastPeriodsCarousel from "./PastPeriodsCarousel";
 import { useDateContext } from "@/components/contexts/DateContext";
-import { Mode } from "@/domain/Date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Streak = () => {
-  const { beginDate, mode } = useDateContext();
+  const { beginDate, endDate, periodLabel, mode } = useDateContext();
 
   const { data: streakData } = api.transaction.getBudgetStreak.useQuery({
+    dateRange: { from: beginDate, to: endDate },
     periodMode: mode,
-    currentPeriodBeginDate: beginDate,
   });
 
   const streakCount = streakData?.streak ?? 0;
-  const streakUnit =
-    streakData?.unit ?? (mode === Mode.Yearly ? "year" : "month");
 
   return (
     <Card className="w-full">
@@ -28,7 +25,7 @@ const Streak = () => {
           <h2
             className={`text-2xl font-bold ${streakCount > 0 ? "text-orange-400" : "text-muted-foreground"}`}
           >
-            🔥 {streakCount} {streakUnit}
+            🔥 {streakCount} {periodLabel}
             {streakCount !== 1 ? "s" : ""} streak 🔥
           </h2>
         </div>

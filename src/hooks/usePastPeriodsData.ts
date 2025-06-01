@@ -1,47 +1,38 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/trpc/react";
-import { Mode } from "@/domain/Date";
-import { type PeriodSummary } from "@/server/api/routers/transaction";
+import { type PeriodSummary } from "@/domain/Transaction";
 import { toast } from "sonner";
 import { useDateContext } from "@/components/contexts/DateContext";
 
 const PAST_PERIODS_PAGE_SIZE = 6;
 
-interface UsePastPeriodsDataProps {
-  initialOffset?: number;
-}
 
-export const usePastPeriodsData = ({
-  initialOffset = 1,
-}: UsePastPeriodsDataProps) => {
+export const usePastPeriodsData = () => {
   const { beginDate, endDate, mode } = useDateContext();
-  const [offset, setOffset] = useState(initialOffset);
+  const [offset, setOffset] = useState(1);
   const [allPastPeriods, setAllPastPeriods] = useState<PeriodSummary[]>([]);
   const [hasMoreData, setHasMoreData] = useState(true);
 
-  const queryInput = useMemo(() => ({
-    periodMode: mode,
-    customPeriodBegin: mode === Mode.Custom ? beginDate : undefined,
-    customPeriodEnd: mode === Mode.Custom ? endDate : undefined,
+  const {data, fetchStatus, error, isLoading, isRefetching} = api.transaction.getPeriodSummaries.useQuery({
     numberOfPeriods: PAST_PERIODS_PAGE_SIZE,
+    dateRange: { from: beginDate, to: endDate },
+    periodMode: mode,
     offset: offset,
-  }), [mode, beginDate, endDate, offset]);
-
-  const {data, fetchStatus, error, isLoading, isRefetching} = api.transaction.getPeriodSummaries.useQuery(queryInput);
+  });
 
   useEffect(() => {
     if (data) {
       const newSummaries = data.summaries ?? [];
       setAllPastPeriods((prev) => 
-        offset === initialOffset && prev.length === 0 && isRefetching ? newSummaries : [...prev, ...newSummaries]
+        offset === 1 && prev.length === 0 && isRefetching ? newSummaries : [...prev, ...newSummaries]
       );
       if (data.hasMore === false) {
         setHasMoreData(false);
       }
     }
-  }, [data, offset, initialOffset, isRefetching]);
+  }, [data, offset, isRefetching]);
 
   useEffect(() => {
     if (error) {
@@ -55,7 +46,7 @@ export const usePastPeriodsData = ({
     setOffset((prevOffset) => prevOffset + PAST_PERIODS_PAGE_SIZE);
   }, [fetchStatus, hasMoreData]);
   
-  const isLoadingInitial = isLoading && allPastPeriods.length === 0 && offset === initialOffset;
+  const isLoadingInitial = isLoading && allPastPeriods.length === 0 && offset === 1;
 
   return {
     allPastPeriods,

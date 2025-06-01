@@ -1,3 +1,10 @@
+import { add, sub } from "date-fns";
+
+export interface DateRange {
+    from: Date;
+    to: Date;
+};
+
 export enum Mode {
   Custom = "Custom",
   Yearly = "Yearly",
@@ -48,6 +55,43 @@ export const getMonthName = (month: number, locale = "en-US"): string => {
 export const countDaysInPeriod = (startDate: Date, endDate: Date): number => {
   return (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
 };
+
+export const getPeriodTitle = (startDate: Date, endDate: Date, mode: Mode): string => {
+  switch (mode) {
+    case Mode.Custom:
+      return `${formatDateToYMD(startDate)} - ${formatDateToYMD(endDate)}`;
+    case Mode.Yearly:
+      return `${startDate.getFullYear()}`;
+    case Mode.Monthly:
+      return `${getMonthName(startDate.getMonth())} ${startDate.getFullYear()}`;
+  }
+}
+
+export const getPeriodLabel = (mode: Mode): string => {
+  return mode === Mode.Custom ? 'Period' : mode === Mode.Yearly ? 'Year' : 'Month'
+}
+
+export const getNextPeriodFromLastPeriod = (startDate: Date, endDate: Date, mode: Mode): DateRange => {
+  switch (mode) {
+    case Mode.Yearly:
+      return { from: add(startDate, { years: 1 }), to: add(endDate, { years: 1 }) };
+    case Mode.Monthly:
+      return { from: add(startDate, { months: 1 }), to: add(endDate, { months: 1 }) };
+    case Mode.Custom:
+      return { from: add(startDate, { days: countDaysInPeriod(startDate, endDate) }), to: add(endDate, { days: countDaysInPeriod(startDate, endDate) }) };
+  }
+}
+
+export const getPreviousPeriodFromLastPeriod = (startDate: Date, endDate: Date, mode: Mode): DateRange => {
+  switch (mode) {
+    case Mode.Yearly:
+      return { from: sub(startDate, { years: 1 }), to: sub(endDate, { years: 1 }) };
+    case Mode.Monthly:
+      return { from: sub(startDate, { months: 1 }), to: sub(endDate, { months: 1 }) };
+    case Mode.Custom:
+      return { from: sub(startDate, { days: countDaysInPeriod(startDate, endDate) }), to: sub(endDate, { days: countDaysInPeriod(startDate, endDate) }) };
+  }
+}
 
 export const numberOfMonthsInPeriod = (
   startDate: Date,

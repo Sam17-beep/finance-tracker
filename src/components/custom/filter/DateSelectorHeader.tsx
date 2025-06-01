@@ -1,12 +1,16 @@
 "use client";
 
-import React from "react";
 import { useDateContext } from "@/components/contexts/DateContext";
 import { Mode } from "@/domain/Date";
+import { type ReactNode } from "react";
 
-const DateSelectorHeader: React.FC<{ children?: React.ReactNode }> = ({
+interface Props {
+  children?: ReactNode,
+};
+
+const DateSelectorHeader = ({
   children,
-}) => {
+}: Props) => {
   const {
     mode,
     title,
@@ -76,15 +80,14 @@ const DateSelectorHeader: React.FC<{ children?: React.ReactNode }> = ({
       <h2 className="mb-3 text-xl font-semibold">{title}</h2>
 
       <div className="mb-4 flex items-center space-x-2">
-        {(["Monthly", "Yearly", "Custom"] as Mode[]).map((m) => (
+        {Object.values(Mode).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              mode === m
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
+            className={`rounded-md px-4 py-2 text-sm font-medium ${mode === m
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
           >
             {m}
           </button>

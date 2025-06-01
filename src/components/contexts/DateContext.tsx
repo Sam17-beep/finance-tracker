@@ -9,9 +9,9 @@ import {
   getEndOfMonth,
   getStartOfYear,
   getEndOfYear,
-  formatDateToYMD,
-  getMonthName,
   numberOfMonthsInPeriod,
+  getPeriodTitle,
+  getPeriodLabel,
 } from "@/domain/Date";
 import React, {
   createContext,
@@ -99,15 +99,12 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
   }, [mode, customDatesState, yearlyDateState, monthlyDateState]);
 
   const title = useMemo(() => {
-    switch (mode) {
-      case Mode.Custom:
-        return `${formatDateToYMD(derivedDates.beginDate)} - ${formatDateToYMD(derivedDates.endDate)}`;
-      case Mode.Yearly:
-        return `${yearlyDateState.year}`;
-      case Mode.Monthly:
-        return `${getMonthName(monthlyDateState.month)} ${monthlyDateState.year}`;
-    }
-  }, [mode, derivedDates, yearlyDateState, monthlyDateState]);
+    return getPeriodTitle(
+      derivedDates.beginDate,
+      derivedDates.endDate,
+      mode,
+    );
+  }, [mode, derivedDates]);
 
   const numberOfMonths = useMemo(
     () =>
@@ -154,7 +151,7 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
       setCustomDateRange: handleSetCustomDateRange,
       setSelectedYear: handleSetSelectedYear,
       setSelectedMonth: handleSetSelectedMonth,
-      periodLabel: mode === Mode.Custom ? 'Period' : mode === Mode.Yearly ? 'Year' : 'Month',
+      periodLabel: getPeriodLabel(mode),
     };
   }, [
     mode,

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 const CurrentPeriodCard = () => {
-  const { beginDate, endDate, periodLabel } = useDateContext();
+  const { beginDate, endDate, periodLabel, mode } = useDateContext();
 
   const {
     data: summary,
@@ -18,6 +18,7 @@ const CurrentPeriodCard = () => {
       from: beginDate,
       to: endDate,
     },
+    periodMode: mode,
   });
 
   if (isLoading) {
@@ -45,14 +46,14 @@ const CurrentPeriodCard = () => {
   }
 
   return (
-    <Card className="w-full md:w-1/2 lg:w-1/3">
+    <Card className="w-full md:w-1/2 lg:w-1/3 px-0">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">{`Current ${periodLabel} Status`}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-8">
+      <CardContent className="flex flex-col">
         {summary ? (
           <PeriodSummaryDisplay
-            periodLabel={summary.periodLabel}
+            periodLabel={summary.periodTitle}
             income={summary.income}
             expenses={summary.expenses}
             isCurrent={true}
