@@ -1,7 +1,8 @@
 import { HydrateClient } from "@/trpc/server";
 import BudgetAnalysisChart from "@/components/custom/analysis/BudgetAnalysisChart";
 import { HeaderWithSummary } from "@/components/custom/layout/HeaderWithSummary";
-import Streak from "@/components/custom/streak/Streak";
+import CurrentPeriodCard from "@/components/custom/analysis/CurentPeriodCard";
+import Streak from "@/components/custom/analysis/Streak";
 
 export default function Home() {
   return (
@@ -10,8 +11,11 @@ export default function Home() {
 
       <HydrateClient>
         <HeaderWithSummary />
-        <Streak />
-        <BudgetAnalysisChart />
+        <div className="flex flex-wrap gap-4">
+          <CurrentPeriodCard />
+          <Streak />
+          <BudgetAnalysisChart />
+        </div>
       </HydrateClient>
     </>
   );

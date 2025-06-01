@@ -27,16 +27,15 @@ interface DateContextType {
   endDate: Date;
   title: string;
   numberOfMonths: number;
-  setMode: (newMode: Mode) => void; // Allows manually changing mode, adjusting dates if needed
-  setCustomDateRange: (startDate: Date, endDate: Date) => void; // Sets mode to Custom
-  setSelectedYear: (year: number) => void; // Sets mode to Yearly
-  setSelectedMonth: (year: number, month: number) => void; // Sets mode to Monthly
+  setMode: (newMode: Mode) => void;
+  setCustomDateRange: (startDate: Date, endDate: Date) => void;
+  setSelectedYear: (year: number) => void;
+  setSelectedMonth: (year: number, month: number) => void;
+  periodLabel: string;
 }
 
-// Context creation
 const DateContext = createContext<DateContextType | undefined>(undefined);
 
-// Provider component
 interface DateProviderProps {
   children: ReactNode;
 }
@@ -155,6 +154,7 @@ export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
       setCustomDateRange: handleSetCustomDateRange,
       setSelectedYear: handleSetSelectedYear,
       setSelectedMonth: handleSetSelectedMonth,
+      periodLabel: mode === Mode.Custom ? 'Period' : mode === Mode.Yearly ? 'Year' : 'Month',
     };
   }, [
     mode,

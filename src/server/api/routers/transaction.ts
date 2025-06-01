@@ -1,105 +1,24 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { type PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Mode } from "@/domain/Date";
+import { type DuplicateTransaction, TransactionSchema, type PeriodSummary } from "@/domain/Transaction";
+import { findDuplicateTransactions, getDateOfOldestTransaction } from "@/server/service/transaction_util";
 
-const transactionSchema = z.object({
-  date: z.date(),
-  amount: z.number(),
-  name: z.string(),
-  categoryId: z.string().nullable().optional(),
-  subcategoryId: z.string().nullable().optional(),
-  isDiscarded: z.boolean().optional(),
-});
-
-type TransactionInput = z.infer<typeof transactionSchema>;
-
-interface DuplicateTransaction {
-  name: string;
-  amount: Prisma.Decimal;
-  date: Date;
-}
-
-export interface PeriodSummary {
-  periodLabel: string;
-  income: number;
-  expenses: number;
-  balance: number;
-  fromDate: Date;
-  toDate: Date;
-}
-
-async function findDuplicateTransactions(
-  ctx: { db: PrismaClient },
-  transactions: TransactionInput[]
-): Promise<DuplicateTransaction[]> {
-  const duplicates = await ctx.db.transaction.findMany({
-    where: {
-      OR: transactions.map(t => ({
-        AND: [
-          { name: t.name },
-          { amount: t.amount },
-          { date: t.date }
-        ]
-      }))
-    },
-    select: {
-      name: true,
-      amount: true,
-      date: true
-    }
-  });
-
-  return duplicates;
-}
-
-async function getDateOfOldestTransaction(ctx: { db: PrismaClient }): Promise<Date | null> {
-  const oldestTransaction = await ctx.db.transaction.findFirst({
-    orderBy: {
-      date: "asc",
-    },
-  });
-
-  return oldestTransaction?.date ?? null;
-}
-
-const getAllInputSchema = z.object({
-  dateRange: z.object({
-    from: z.date(),
-    to: z.date(),
-  }),
-  categoryId: z.string().optional(),
-  subcategoryId: z.string().optional(),
-  page: z.number().min(1).default(1),
-  pageSize: z.number().min(1).max(100).default(50),
-});
-
-const getSummaryInputSchema = z.object({
-  dateRange: z.object({
-    from: z.date(),
-    to: z.date(),
-  }),
-  categoryId: z.string().optional(),
-  subcategoryId: z.string().optional(),
-});
-
-const getPeriodSummariesInputSchema = z.object({
-  numberOfPeriods: z.number().min(1).default(6),
-  periodMode: z.nativeEnum(Mode),
-  customPeriodBegin: z.date().optional(),
-  customPeriodEnd: z.date().optional(),
-  offset: z.number().min(0).optional().default(0),
-});
-
-const getBudgetStreakInputSchema = z.object({
-  periodMode: z.nativeEnum(Mode),
-  currentPeriodBeginDate: z.date(),
-});
 
 export const transactionRouter = createTRPCRouter({
   getAll: publicProcedure
-    .input(getAllInputSchema)
+    .input(z.object({
+      dateRange: z.object({
+        from: z.date(),
+        to: z.date(),
+      }),
+      categoryId: z.string().optional(),
+      subcategoryId: z.string().optional(),
+      page: z.number().min(1).default(1),
+      pageSize: z.number().min(1).max(100).default(50),
+    }))
     .query(async ({ ctx, input }) => {
       const { dateRange, categoryId, subcategoryId, page, pageSize } = input;
       const skip = (page - 1) * pageSize;
@@ -139,8 +58,15 @@ export const transactionRouter = createTRPCRouter({
       };
     }),
 
-  getSummary: publicProcedure
-    .input(getSummaryInputSchema)
+  getPeriodSummary: publicProcedure
+    .input(z.object({
+      dateRange: z.object({
+        from: z.date(),
+        to: z.date(),
+      }),
+      categoryId: z.string().optional(),
+      subcategoryId: z.string().optional(),
+    }))
     .query(async ({ ctx, input }) => {
       const { dateRange, categoryId, subcategoryId } = input;
 
@@ -180,9 +106,14 @@ export const transactionRouter = createTRPCRouter({
         toDate: dateRange.to,
       } satisfies PeriodSummary;
     }),
-
   getPeriodSummaries: publicProcedure
-    .input(getPeriodSummariesInputSchema)
+    .input(z.object({
+      numberOfPeriods: z.number().min(1).default(6),
+      periodMode: z.nativeEnum(Mode),
+      customPeriodBegin: z.date().optional(),
+      customPeriodEnd: z.date().optional(),
+      offset: z.number().min(0).optional().default(0),
+    }))
     .query(async ({ ctx, input }) => {
       const { numberOfPeriods, periodMode, customPeriodBegin, customPeriodEnd, offset } = input;
       const summaries: PeriodSummary[] = [];
@@ -195,7 +126,7 @@ export const transactionRouter = createTRPCRouter({
             message: 'customPeriodBegin and customPeriodEnd are required for custom periodMode.',
           });
         }
-        
+
         for (let i = 0; i < numberOfPeriods; i++) {
           const currentConceptualIndex = offset + i;
           let from: Date, to: Date, periodLabel: string;
@@ -210,7 +141,7 @@ export const transactionRouter = createTRPCRouter({
             const baseDate = new Date(customPeriodBegin);
             baseDate.setDate(1);
             baseDate.setMonth(baseDate.getMonth() - monthOffsetPrior);
-            
+
             year = baseDate.getFullYear();
             const month = baseDate.getMonth();
             from = new Date(year, month, 1);
@@ -286,7 +217,10 @@ export const transactionRouter = createTRPCRouter({
     }),
 
   getBudgetStreak: publicProcedure
-    .input(getBudgetStreakInputSchema)
+    .input(z.object({
+      periodMode: z.nativeEnum(Mode),
+      currentPeriodBeginDate: z.date(),
+    }))
     .query(async ({ ctx, input }) => {
       const { periodMode, currentPeriodBeginDate } = input;
       let streak = 0;
@@ -306,12 +240,12 @@ export const transactionRouter = createTRPCRouter({
           from = new Date(dateToCheck.getFullYear(), dateToCheck.getMonth(), 1);
           to = new Date(dateToCheck.getFullYear(), dateToCheck.getMonth() + 1, 0);
         }
-        
+
         if (currentPeriodBeginDate.getFullYear() - dateToCheck.getFullYear() > 10 && periodMode !== Mode.Yearly) {
-            break;
+          break;
         }
         if (currentPeriodBeginDate.getFullYear() - dateToCheck.getFullYear() > 100 && periodMode === Mode.Yearly) {
-            break;
+          break;
         }
 
         const transactions = await ctx.db.transaction.findMany({
@@ -342,7 +276,7 @@ export const transactionRouter = createTRPCRouter({
   update: publicProcedure
     .input(z.object({
       id: z.string(),
-      data: transactionSchema,
+      data: TransactionSchema
     }))
     .mutation(async ({ ctx, input: { id, data } }) => {
       const updated = await ctx.db.transaction.update({
@@ -357,7 +291,7 @@ export const transactionRouter = createTRPCRouter({
           appliedRules: true,
         },
       });
-      
+
       return {
         ...updated,
         amount: Number(updated.amount),
@@ -373,12 +307,12 @@ export const transactionRouter = createTRPCRouter({
     }),
 
   bulkCreate: publicProcedure
-    .input(z.array(transactionSchema))
+    .input(z.array(TransactionSchema))
     .mutation(async ({ ctx, input }) => {
       const duplicates = await findDuplicateTransactions(ctx, input);
       if (duplicates.length > 0) {
-        const uniqueTransactions = input.filter(transaction => 
-          !duplicates.some((dup: DuplicateTransaction) => 
+        const uniqueTransactions = input.filter(transaction =>
+          !duplicates.some((dup: DuplicateTransaction) =>
             dup.name === transaction.name &&
             Number(dup.amount) === transaction.amount &&
             dup.date.getTime() === transaction.date.getTime()

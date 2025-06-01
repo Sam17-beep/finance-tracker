@@ -16,7 +16,7 @@ export function useTransactionSummary({
     data: summaryData,
     isLoading: isLoadingSummary,
     error: summaryError,
-  } = api.transaction.getSummary.useQuery(
+  } = api.transaction.getPeriodSummary.useQuery(
     {
       dateRange: { from: beginDate, to: endDate },
       categoryId: !selectedCategory || selectedCategory === "any" ? undefined : selectedCategory,
