@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarIcon } from "lucide-react";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -58,6 +58,27 @@ export function DateRangePicker({
     }
   };
 
+  const handleQuickSelect = (type: 'lastMonth' | 'last6Months') => {
+    const now = new Date();
+    let newRange: DateRange;
+
+    if (type === 'lastMonth') {
+      newRange = {
+        from: startOfMonth(subMonths(now, 1)),
+        to: endOfMonth(subMonths(now, 1)),
+      };
+    } else {
+      newRange = {
+        from: startOfDay(subMonths(now, 6)),
+        to: endOfDay(now),
+      };
+    }
+
+    setSelectedRange({ from: newRange.from, to: newRange.to });
+    onChange(newRange);
+    setIsOpen(false);
+  };
+
   const isDateSelected: ModifierFunction = (date: Date) => {
     if (!selectedRange.from) return false;
     if (!selectedRange.to)
@@ -109,6 +130,26 @@ export function DateRangePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
+          <div className="p-3 border-b">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickSelect('lastMonth')}
+                className="text-xs"
+              >
+                Last Month
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickSelect('last6Months')}
+                className="text-xs"
+              >
+                Last 6 Months
+              </Button>
+            </div>
+          </div>
           <Calendar
             mode="single"
             selected={selectedRange.from ?? undefined}

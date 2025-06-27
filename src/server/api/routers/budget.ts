@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 const decimalSchema = z.number().positive().multipleOf(0.01).max(99999999.99);
 
 export const budgetRouter = createTRPCRouter({
+  // Category operations
   createCategory: publicProcedure
     .input(z.object({
       name: z.string().min(1).max(50),
@@ -47,6 +48,7 @@ export const budgetRouter = createTRPCRouter({
       });
     }),
 
+  // Subcategory operations
   createSubcategory: publicProcedure
     .input(z.object({
       name: z.string().min(1).max(50),
@@ -54,6 +56,7 @@ export const budgetRouter = createTRPCRouter({
       categoryId: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Verify category exists
       const category = await ctx.db.category.findUnique({
         where: { id: input.categoryId },
       });
@@ -91,6 +94,20 @@ export const budgetRouter = createTRPCRouter({
       return ctx.db.subcategory.delete({
         where: { id: input },
       });
+    }),
+
+  deleteAll: publicProcedure
+    .mutation(async ({ ctx }) => {
+      // Delete all subcategories first due to foreign key constraints
+      const deletedSubcategories = await ctx.db.subcategory.deleteMany({});
+      
+      // Then delete all categories
+      const deletedCategories = await ctx.db.category.deleteMany({});
+      
+      return { 
+        deletedCategories: deletedCategories.count,
+        deletedSubcategories: deletedSubcategories.count 
+      };
     }),
 });
 

@@ -11,24 +11,43 @@ datasource db {
 }
 
 model Category {
-  id          String        @id @default(cuid())
-  name        String
-  isIncome    Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  name          String
+  isIncome      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   subcategories Subcategory[]
-  transactions Transaction[]
-  rules        Rule[]
+  transactions  Transaction[]
+  rules         Rule[]
+}
+
+model Bank {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  description       String?
+  dateFormat        String   // e.g., "YYYY-MM-DD", "MM/DD/YYYY", "DD-MM-YYYY"
+  dateColumnIndex   Int      // Which column contains the date
+  nameColumnIndex   Int      // Which column contains the transaction name/description
+  amountColumnIndex Int      // Which column contains the amount
+  hasSeparateIncomeExpenseColumns Boolean @default(false) // Some banks have separate income/expense columns
+  incomeColumnIndex Int?     // Which column contains income (if separate)
+  expenseColumnIndex Int?    // Which column contains expense (if separate)
+  skipFirstRow      Boolean  @default(true) // Whether to skip header row
+  amountIsNegative  Boolean  @default(false) // Whether negative amounts are expenses
+  isCreditCard      Boolean  @default(false) // Whether this is a credit card (positive = expense, negative = income)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  transactions      Transaction[]
 }
 
 model Subcategory {
-  id          String    @id @default(cuid())
-  name        String
-  targetAmount Decimal   @default(0)
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String        @id @default(cuid())
+  name         String
+  targetAmount Decimal       @default(0)
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   transactions Transaction[]
   rules        Rule[]
 
@@ -36,34 +55,37 @@ model Subcategory {
 }
 
 model Transaction {
-  id            String      @id @default(cuid())
+  id            String       @id @default(cuid())
   date          DateTime
   amount        Decimal
   name          String
   categoryId    String?
-  category      Category?   @relation(fields: [categoryId], references: [id])
+  category      Category?    @relation(fields: [categoryId], references: [id])
   subcategoryId String?
   subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
-  isDiscarded   Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  appliedRules  Rule[]      @relation("TransactionRules")
+  bankId        String?
+  bank          Bank?        @relation(fields: [bankId], references: [id])
+  isDiscarded   Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appliedRules  Rule[]       @relation("TransactionRules")
 
   @@index([categoryId])
   @@index([subcategoryId])
+  @@index([bankId])
 }
 
 model Rule {
-  id            String      @id @default(cuid())
-  matchType     String      // "exact" or "contains"
-  matchString   String
-  categoryId    String?
-  category      Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  subcategoryId String?
-  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
-  isDiscarded   Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                  String        @id @default(cuid())
+  matchType           String // "exact" or "contains"
+  matchString         String
+  categoryId          String?
+  category            Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategoryId       String?
+  subcategory         Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  isDiscarded         Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   appliedTransactions Transaction[] @relation("TransactionRules")
 
   @@index([categoryId])

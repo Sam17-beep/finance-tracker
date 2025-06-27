@@ -60,14 +60,32 @@ export function ImportedTransactionRow({
   );
 
   const formatAmount = (amount: number) => {
-    const formatted = amount.toFixed(2);
-    const isPositive = amount > 0;
-    return (
-      <span className={isPositive ? "text-green-600" : "text-red-600"}>
-        {isPositive ? "+" : ""}
-        {formatted}
-      </span>
-    );
+    // Handle edge cases where amount might not be a valid number
+    if (typeof amount !== 'number' || isNaN(amount) || !isFinite(amount)) {
+      return (
+        <span className="text-gray-500">
+          Invalid
+        </span>
+      );
+    }
+    
+    try {
+      const formatted = amount.toFixed(2);
+      const isPositive = amount > 0;
+      return (
+        <span className={isPositive ? "text-green-600" : "text-red-600"}>
+          {isPositive ? "+" : ""}
+          {formatted}
+        </span>
+      );
+    } catch (error) {
+      console.error('Error formatting amount:', error, amount);
+      return (
+        <span className="text-gray-500">
+          Error
+        </span>
+      );
+    }
   };
 
   return (
@@ -101,13 +119,17 @@ export function ImportedTransactionRow({
       <TableCell className="text-right">
         <InlineEdit
           renderedValue={formatAmount(transaction.amount)}
-          value={transaction.amount.toString()}
+          value={transaction.amount}
+          type="number"
           onSave={(value) => {
-            onSave(index, {
-              ...transaction,
-              amount: parseFloat(value.toString()),
-            });
-            onRuleCreatedOrChange?.();
+            const numValue = typeof value === 'number' ? value : parseFloat(value.toString());
+            if (!isNaN(numValue)) {
+              onSave(index, {
+                ...transaction,
+                amount: numValue,
+              });
+              onRuleCreatedOrChange?.();
+            }
           }}
         />
       </TableCell>

@@ -10,9 +10,13 @@ import { CategoryItem } from './CategoryItem';
 interface SortableCategoryItemProps {
   category: Category;
   onDelete: () => void;
+  lastMonthSpending?: {
+    spendingByCategory: Record<string, number>;
+    spendingBySubcategory: Record<string, number>;
+  };
 }
 
-export function SortableCategoryItem({ category, onDelete }: SortableCategoryItemProps) {
+export function SortableCategoryItem({ category, onDelete, lastMonthSpending }: SortableCategoryItemProps) {
   const {
     attributes,
     listeners,
@@ -35,6 +39,7 @@ export function SortableCategoryItem({ category, onDelete }: SortableCategoryIte
       <CategoryItem 
         category={category} 
         onDelete={onDelete}
+        lastMonthSpending={lastMonthSpending}
         dragHandle={
           <Button
             variant="ghost"

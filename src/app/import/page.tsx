@@ -72,7 +72,24 @@ export default function ImportPage() {
       return;
     }
 
-    bulkSaveMutation.mutate(transactions);
+    // Filter out discarded transactions and only include required fields
+    const transactionsToSave = transactions
+      .filter(t => !t.isDiscarded)
+      .map(t => ({
+        date: t.date,
+        name: t.name,
+        amount: t.amount,
+        categoryId: t.categoryId || null,
+        subcategoryId: t.subcategoryId || null,
+        isDiscarded: false,
+      }));
+
+    if (transactionsToSave.length === 0) {
+      toast.error("No valid transactions to save (all are discarded)");
+      return;
+    }
+
+    bulkSaveMutation.mutate(transactionsToSave);
   };
 
   const handleReapplyRules = () => {

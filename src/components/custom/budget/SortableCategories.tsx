@@ -22,11 +22,15 @@ import { SortableCategoryItem } from './SortableCategoryItem';
 interface SortableCategoriesProps {
   categories: Category[];
   onDeleteCategory: (categoryId: string) => void;
+  lastMonthSpending?: {
+    spendingByCategory: Record<string, number>;
+    spendingBySubcategory: Record<string, number>;
+  };
 }
 
 type CategoryOrder = [string, number][];
 
-export function SortableCategories({ categories, onDeleteCategory }: SortableCategoriesProps) {
+export function SortableCategories({ categories, onDeleteCategory, lastMonthSpending }: SortableCategoriesProps) {
   const [items, setItems] = useState<Category[]>([]);
 
   const sensors = useSensors(
@@ -105,6 +109,7 @@ export function SortableCategories({ categories, onDeleteCategory }: SortableCat
               key={category.id}
               category={category}
               onDelete={() => onDeleteCategory(category.id)}
+              lastMonthSpending={lastMonthSpending}
             />
           ))}
         </div>

@@ -22,12 +22,17 @@ interface CategoryItemProps {
   category: Category;
   onDelete: () => void;
   dragHandle?: React.ReactNode;
+  lastMonthSpending?: {
+    spendingByCategory: Record<string, number>;
+    spendingBySubcategory: Record<string, number>;
+  };
 }
 
 export function CategoryItem({
   category,
   onDelete,
   dragHandle,
+  lastMonthSpending,
 }: CategoryItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const utils = api.useUtils();
@@ -73,6 +78,23 @@ export function CategoryItem({
       (total, sub) => total + Number(sub.targetAmount),
       0,
     );
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+    }).format(amount);
+  };
+
+  const getLastMonthCategorySpending = () => {
+    if (!lastMonthSpending?.spendingByCategory) return 0;
+    return lastMonthSpending.spendingByCategory[category.id] || 0;
+  };
+
+  const getLastMonthSubcategorySpending = (subcategoryId: string) => {
+    if (!lastMonthSpending?.spendingBySubcategory) return 0;
+    return lastMonthSpending.spendingBySubcategory[subcategoryId] || 0;
   };
 
   const handleDeleteSubcategory = (subcategoryId: string) => {
@@ -150,8 +172,13 @@ export function CategoryItem({
             <div className="text-right">
               <p className="text-muted-foreground text-sm">Total Target</p>
               <p className="font-medium">
-                ${calculateCategoryTotal().toFixed(2)}
+                {formatCurrency(calculateCategoryTotal())}
               </p>
+              {getLastMonthCategorySpending() > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formatCurrency(getLastMonthCategorySpending())}
+                </p>
+              )}
             </div>
             <Button
               variant="ghost"
@@ -202,18 +229,25 @@ export function CategoryItem({
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <InlineEdit
-                          value={Number(subcategory.targetAmount)}
-                          onSave={(value) =>
-                            handleUpdateSubcategory(
-                              subcategory.id,
-                              "targetAmount",
-                              value,
-                            )
-                          }
-                          type="number"
-                          className="text-right"
-                        />
+                        <div>
+                          <InlineEdit
+                            value={Number(subcategory.targetAmount)}
+                            onSave={(value) =>
+                              handleUpdateSubcategory(
+                                subcategory.id,
+                                "targetAmount",
+                                value,
+                              )
+                            }
+                            type="number"
+                            className="text-right"
+                          />
+                          {getLastMonthSubcategorySpending(subcategory.id) > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {formatCurrency(getLastMonthSubcategorySpending(subcategory.id))}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button
