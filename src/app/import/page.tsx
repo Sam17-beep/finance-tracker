@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { Upload, Save, RefreshCw } from "lucide-react";
+import { Upload, Save, RefreshCw, Building2 } from "lucide-react";
 import { CSVUploader } from "../../components/custom/import/CSVUploader";
 import { ImportedTransactionTable } from "../../components/custom/importedTransaction/ImportedTransactionTable";
 import { RulesManager } from "../../components/custom/rules/RulesManager";
+import { BankManager } from "../../components/custom/bank/BankManager";
 import {
   Tooltip,
   TooltipContent,
@@ -150,6 +151,10 @@ export default function ImportPage() {
             Import
           </TabsTrigger>
           <TabsTrigger value="rules">Rules</TabsTrigger>
+          <TabsTrigger value="banks">
+            <Building2 className="mr-2 h-4 w-4" />
+            Banks
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transactions" className="space-y-4">
@@ -179,6 +184,10 @@ export default function ImportPage() {
               }
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="banks">
+          <BankManager />
         </TabsContent>
       </Tabs>
     </div>
